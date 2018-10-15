@@ -2,6 +2,9 @@
 
 
 # Useful links
+
+## Deep Learning Courses
+- [Introduction to Deep Learning (Udacity)](https://classroom.udacity.com/courses/ud730)
 ## Segmentation in Deep Learning
 - [Deep learning Principles for Image Segmentation](https://medium.com/datadriveninvestor/deep-learning-for-image-segmentation-d10d19131113)
 - [How to do image segmentation using deep learning](https://medium.com/nanonets/how-to-do-image-segmentation-using-deep-learning-c673cc5862ef)
