@@ -2,11 +2,12 @@
 
 
 # Useful links
-## Sementic segmentations
+## Segmentation in Deep Learning
+- [Deep learning Principles for Image Segmentation](https://medium.com/datadriveninvestor/deep-learning-for-image-segmentation-d10d19131113)
 - [How to do image segmentation using deep learning](https://medium.com/nanonets/how-to-do-image-segmentation-using-deep-learning-c673cc5862ef)
 - [A 2017 Guide to Semantic Segmentation with Deep Learning](http://blog.qure.ai/notes/semantic-segmentation-deep-learning-review)
-- [SegNet: A Deep Convolutional Encoder-Decoder Architecture for Image
-Segmentation](https://arxiv.org/pdf/1511.00561.pdf)
+
+-[Deep Learning for Medical Image Segmentation] (https://towardsdatascience.com/google-deepmind-deep-learning-for-medical-image-segmentation-with-interactive-code-4634b6fd6a3a)
 
 
 ## Creating Hidden Layers
@@ -17,3 +18,15 @@ Segmentation](https://arxiv.org/pdf/1511.00561.pdf)
 ## Convolutions
 
 - [A guide to convolution arithmetic for deep learning](https://arxiv.org/pdf/1603.07285v1.pdf)
+
+## Architectures
+- [Medical image segmentation & deep learning](https://medium.com/@meneergent/medical-image-segmentation-deep-learning-road-towards-gantrification-6bc84a2f6158)
+
+- [Image Segmentation Using DIGITS 5](https://devblogs.nvidia.com/image-segmentation-using-digits-5/)
+- [SegNet: A Deep Convolutional Encoder-Decoder Architecture for Image Segmentation](https://arxiv.org/pdf/1511.00561.pdf)
+
+## Resarch Papers
+- [Segmentation and classification of colon glands with deep convolutional neural networks and total variation regularization](https://peerj.com/articles/3874/) (leNet5)
+- [A deep convolutional neural network approach for astrocyte detection](https://www.nature.com/articles/s41598-018-31284-x) (ResUnet+ResConvGRU			
++Inter+TwoSeq)
+- [Medical image semantic segmentation based on deep learning](https://www.researchgate.net/publication/318511415_Medical_image_semantic_segmentation_based_on_deep_learning) (H-ReNet)
