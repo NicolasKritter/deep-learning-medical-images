@@ -7,7 +7,7 @@
 - [How to do image segmentation using deep learning](https://medium.com/nanonets/how-to-do-image-segmentation-using-deep-learning-c673cc5862ef)
 - [A 2017 Guide to Semantic Segmentation with Deep Learning](http://blog.qure.ai/notes/semantic-segmentation-deep-learning-review)
 
--[Deep Learning for Medical Image Segmentation] (https://towardsdatascience.com/google-deepmind-deep-learning-for-medical-image-segmentation-with-interactive-code-4634b6fd6a3a)
+- [Deep Learning for Medical Image Segmentation](https://towardsdatascience.com/google-deepmind-deep-learning-for-medical-image-segmentation-with-interactive-code-4634b6fd6a3a)
 
 
 ## Creating Hidden Layers
