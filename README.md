@@ -18,6 +18,7 @@
 ## Convolutions
 
 - [A guide to convolution arithmetic for deep learning](https://arxiv.org/pdf/1603.07285v1.pdf)
+- [Understanding of Convolutional Neural Network](https://medium.com/@RaghavPrabhu/understanding-of-convolutional-neural-network-cnn-deep-learning-99760835f148)
 
 ## Architectures
 - [Medical image segmentation & deep learning](https://medium.com/@meneergent/medical-image-segmentation-deep-learning-road-towards-gantrification-6bc84a2f6158)
