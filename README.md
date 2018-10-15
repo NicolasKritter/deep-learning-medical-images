@@ -13,3 +13,7 @@ Segmentation](https://arxiv.org/pdf/1511.00561.pdf)
 - [Beginners Ask “How Many Hidden Layers/Neurons to Use in Artificial Neural Networks?”](https://towardsdatascience.com/beginners-ask-how-many-hidden-layers-neurons-to-use-in-artificial-neural-networks-51466afa0d3e)
 - [The Number of Hidden Layers](https://www.heatonresearch.com/2017/06/01/hidden-layers.html)
 - [How to choose the number of hidden layers and nodes in a feedforward neural network?](https://stats.stackexchange.com/questions/181/how-to-choose-the-number-of-hidden-layers-and-nodes-in-a-feedforward-neural-netw)
+
+## Convolutions
+
+- [A guide to convolution arithmetic for deep learning](https://arxiv.org/pdf/1603.07285v1.pdf)
