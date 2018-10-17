@@ -31,6 +31,8 @@
 
 ## Resarch Papers
 - [Segmentation and classification of colon glands with deep convolutional neural networks and total variation regularization](https://peerj.com/articles/3874/) (leNet5)
+- [Cell Detection in Microscopy Images with Deep Convolutional Neural Network and Compressed Sensing](https://arxiv.org/pdf/1708.03307.pdf)
 - [A deep convolutional neural network approach for astrocyte detection](https://www.nature.com/articles/s41598-018-31284-x) (ResUnet+ResConvGRU			
 +Inter+TwoSeq)
 - [Medical image semantic segmentation based on deep learning](https://www.researchgate.net/publication/318511415_Medical_image_semantic_segmentation_based_on_deep_learning) (H-ReNet)
+
