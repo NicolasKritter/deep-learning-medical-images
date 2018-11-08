@@ -25,7 +25,7 @@
 
 ## Architectures
 - [Medical image segmentation & deep learning](https://medium.com/@meneergent/medical-image-segmentation-deep-learning-road-towards-gantrification-6bc84a2f6158)
-- [Unet for medical image segmentation] (https://www.kaggle.com/bluejay9676/vanila-u-net)
+- [Unet for medical image segmentation](https://www.kaggle.com/bluejay9676/vanila-u-net)
 - [Image Segmentation Using DIGITS 5](https://devblogs.nvidia.com/image-segmentation-using-digits-5/)
 - [SegNet: A Deep Convolutional Encoder-Decoder Architecture for Image Segmentation](https://arxiv.org/pdf/1511.00561.pdf)
 
