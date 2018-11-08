@@ -37,4 +37,4 @@
 - [Medical image semantic segmentation based on deep learning](https://www.researchgate.net/publication/318511415_Medical_image_semantic_segmentation_based_on_deep_learning) (H-ReNet)
 
 ## Training
-- [Accuracy of the model comparing masks] (https://www.jeremyjordan.me/evaluating-image-segmentation-models/)
+- [Accuracy of the model comparing masks](https://www.jeremyjordan.me/evaluating-image-segmentation-models/)
