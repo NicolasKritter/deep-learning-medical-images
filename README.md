@@ -38,3 +38,4 @@
 
 ## Training
 - [Accuracy of the model comparing masks](https://www.jeremyjordan.me/evaluating-image-segmentation-models/)
+- [Training metrics](https://towardsdatascience.com/my-secret-sauce-to-be-in-top-2-of-a-kaggle-competition-57cff0677d3c)
