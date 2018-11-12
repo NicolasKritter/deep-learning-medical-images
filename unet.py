@@ -6,11 +6,11 @@ Created on Thu Nov  1 15:57:51 2018
 """
 
 import numpy as np
-import tensorflow as tf
+
 import math
 import matplotlib.pyplot as plt
 import random
-
+import tensorflow as tf
 from skimage.io import  imshow
 
 from tensorflow.python.ops import array_ops
@@ -23,16 +23,21 @@ with open (PICKLE_FILE,'rb') as f:
     save = pickle.load(f)
     train_dataset = save['train_images']
     train_labels=save['train_mask']
-    test_dataset = save['test_image']    
+    test_dataset = save['test_image']
+    
+    IMG_WIDTH = save['IMG_WIDTH']
+    IMG_HEIGHT = save['IMG_WIDTH']
+    IMG_CHANNELS = save['IMG_CHANNELS']
+    
+    TRAIN_DATASET_SIZE = save['TRAIN_DATASET_SIZE']
+    TEST_DATASET_SIZE = save['TEST_DATASET_SIZE']
     del save #help gc to free memory
     del PICKLE_FILE
     print('Training set (images masks)',train_dataset.shape,train_labels.shape)
     print('Test set',test_dataset.shape)
     
 SEED = 42
-IMG_WIDTH = 256
-IMG_HEIGHT = 256
-IMG_CHANNELS = 3
+
 tf.set_random_seed(SEED)
 
 def deconv2d(input_tensor, filter_size, output_size, out_channels, in_channels, name, strides = [1, 1, 1, 1]):
@@ -65,9 +70,9 @@ def concatenate(branches):
 def sigmoid(x):
     return 1 / (1 + math.exp(-x))
 
-BATCH_SIZE = 10
 
-NUM_STEPS = 10#000
+
+NUM_STEPS = 1#000
 images = train_dataset
 labels = train_labels
 
@@ -78,6 +83,8 @@ def shuffle():
    labels = train_labels[p]
 
 SAVE=True
+BATCH_SIZE = 2
+
 def trainGraph(graph):
     iteration = 0
     print("Training graph")
@@ -86,7 +93,7 @@ def trainGraph(graph):
       print('Initialized')
       #Epoch
       for step in range(NUM_STEPS):
-        if iteration>67:
+        if iteration>TRAIN_DATASET_SIZE:
             shuffle()
             iteration = 0
         offset = (step * BATCH_SIZE) % (train_labels.shape[0] - BATCH_SIZE)
@@ -97,22 +104,25 @@ def trainGraph(graph):
         iteration+=1
         if (step % 500 == 0):
             print(str(step) +"/"+str(NUM_STEPS)+ " training loss:", str(loss_value))
+#saves a model every 2 hours and maximum 4 latest models are saved.
+        #saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=2,global_step=step,write_meta_graph=False)
       if SAVE:
           saver = tf.train.Saver()
-          save_path =  saver.save(session,SAVE_PATH)
-          print(save_path)
+          saver.save(session,SAVE_PATH)
       print('Done')
 
-def testGraph2(graph,sess):
+def testGraph2(graph):
     print("test 2")
-    ix = random.randint(0, 600)
+    ix = random.randint(0, TEST_DATASET_SIZE-1)
     check_data = np.expand_dims(np.array(images[ix]), axis=0)
     with tf.Session(graph=graph) as session:
+        saver = tf.train.Saver()
+        saver.restore(session, SAVE_PATH)
         check_train = {tf_train_dataset:check_data}
         check_train_mask = session.run(logits,feed_dict=check_train)
-        true_mask = labels[ix]
+        true_mask = labels[ix].astype(float)[:, :, 0]
         print("original image")
-        imshow(images[ix])
+        imshow(images[ix].astype(float)[:, :, 0])
         plt.show()
         print("true mask")
         print(true_mask.shape)
@@ -125,16 +135,17 @@ def testGraph2(graph,sess):
 
 def testGraph(graph):
     print("test 1")
-
-    ix = random.randint(0, 64) #len(X_test) - 1 = 64
-    test_image = test_dataset[ix].astype(float)
+    ix = random.randint(0, TEST_DATASET_SIZE-1) #len(X_test) - 1 = 64
+    test_image = test_dataset[ix].astype(float)[:, :, 0]
     imshow(test_image)
     plt.show()
     with tf.Session(graph=graph) as session:
-        test_image = np.reshape(test_image, [-1, 128 , 128, 3])
+        saver = tf.train.Saver()
+        saver.restore(session, SAVE_PATH)
+        test_image = np.reshape(test_image, [-1, IMG_WIDTH , IMG_HEIGHT, 1])
         test_data = {tf_train_dataset : test_image}
         test_mask = session.run([logits],feed_dict=test_data)
-        test_mask = np.reshape(np.squeeze(test_mask), [IMG_WIDTH , IMG_WIDTH, 1])
+        test_mask = np.reshape(np.squeeze(test_mask), [IMG_WIDTH , IMG_HEIGHT, 1])
         for i in range(IMG_WIDTH):
             for j in range(IMG_HEIGHT):
                     test_mask[i][j] = int(sigmoid(test_mask[i][j])*255)
@@ -225,17 +236,9 @@ with graph.as_default():
   valid_prediction = tf.nn.softmax(model(tf_valid_dataset))
   test_prediction = tf.nn.softmax(model(tf_test_dataset))"""
 
-def saveGraph(graph):
-    print("saving graph")
-    with tf.Session(graph=graph) as session:
-       saver = tf.train.Saver()
-       tf.global_variables_initializer().run()
-       save_path =  saver.save(session,SAVE_PATH)
-       print("graph saved")
-       return save_path
+
       
 trainGraph(graph)
-saveGraph(graph)
 testGraph(graph)
 
 testGraph2(graph)
