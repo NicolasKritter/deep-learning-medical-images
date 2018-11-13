@@ -46,19 +46,9 @@ def getTrainImagesNMasks():
         images[n] = img
         mask = np.zeros((IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
         for mask_file in next(os.walk(path + '/masks/'))[2]:
-            mask_ = cv2.imread(path + '/masks/' + mask_file,IMG_CHANNELS)#TODO file can't be read
-            if mask_ is None:
-                print("file",path + '/masks/' + mask_file)
-                print("exist",os.path.isfile(path + '/masks/' + mask_file))
-                print("Can't load image", file=sys.stderr)
-                sys.exit(1)
+           #print(mask_file)
+            mask_ = cv2.imread(path + '/masks/' + mask_file)[:,:,:1]
             mask_ = resize(mask_, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-           # mask_ = resize(mask_, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-            if (n==0):
-                test = mask_[:, :, 0]
-                imshow(test)
-                plt.title("showing")
-                plt.show()
             mask = mask_#np.maximum(mask, mask_)
         labels[n] = mask
     return images,labels

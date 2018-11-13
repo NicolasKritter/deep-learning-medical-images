@@ -72,7 +72,7 @@ def sigmoid(x):
 
 
 
-NUM_STEPS = 1#000
+NUM_STEPS = 100#000
 images = train_dataset
 labels = train_labels
 
@@ -90,6 +90,7 @@ def trainGraph(graph):
     print("Training graph")
     with tf.Session(graph=graph) as session:
       tf.global_variables_initializer().run()
+      saver = tf.train.Saver()
       print('Initialized')
       #Epoch
       for step in range(NUM_STEPS):
@@ -102,12 +103,11 @@ def trainGraph(graph):
         feed_dict = {tf_train_dataset : batch_data, tf_train_labels : batch_labels}
         loss_value, _ = session.run([loss, optimizer], feed_dict=feed_dict)
         iteration+=1
-        if (step % 500 == 0):
+        if (step % 50 == 0):
             print(str(step) +"/"+str(NUM_STEPS)+ " training loss:", str(loss_value))
 #saves a model every 2 hours and maximum 4 latest models are saved.
-        #saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=2,global_step=step,write_meta_graph=False)
+            saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=1)#write_meta_graph=False
       if SAVE:
-          saver = tf.train.Saver()
           saver.save(session,SAVE_PATH)
       print('Done')
 
