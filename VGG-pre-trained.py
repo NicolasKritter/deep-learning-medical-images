@@ -18,7 +18,7 @@ tf.set_random_seed(SEED)
 
 VGG_PATH ="./Pre-trained/VGG"
 PICKLE_FILE = 'data.pickle'
-#https://gist.github.com/khanhnamle1994/e2ff59ddca93c0205ac4e566d40b5e88
+#https://medium.com/nanonets/how-to-do-image-segmentation-using-deep-learning-c673cc5862ef
 with open (PICKLE_FILE,'rb') as f:
     save = pickle.load(f)
     train_dataset = save['train_images']
