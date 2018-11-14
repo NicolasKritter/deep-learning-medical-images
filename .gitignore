@@ -1,5 +1,5 @@
 #data
-data/
+data/*/*
 *.tar.gz
 *.pickle
 Pre-Trained/*/*
