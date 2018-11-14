@@ -17,7 +17,7 @@ from tensorflow.python.ops import array_ops
 from six.moves import cPickle as pickle
 
 PICKLE_FILE = 'data.pickle'
-SAVE_PATH = 'Model/model.ckpt'
+SAVE_PATH = 'Model/unet/model.ckpt'
 
 with open (PICKLE_FILE,'rb') as f:
     save = pickle.load(f)

@@ -18,7 +18,7 @@ tf.set_random_seed(SEED)
 
 VGG_PATH ="./Pre-trained/VGG"
 PICKLE_FILE = 'data.pickle'
-
+#https://gist.github.com/khanhnamle1994/e2ff59ddca93c0205ac4e566d40b5e88
 with open (PICKLE_FILE,'rb') as f:
     save = pickle.load(f)
     train_dataset = save['train_images']
