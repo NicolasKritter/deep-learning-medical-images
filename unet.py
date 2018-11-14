@@ -68,11 +68,12 @@ def concatenate(branches):
     return array_ops.concat(branches, 3)
     
 def sigmoid(x):
+    x = x/10
     return 1 / (1 + math.exp(-x))
 
 
 
-NUM_STEPS = 100#000
+NUM_STEPS = 100#00
 images = train_dataset
 labels = train_labels
 
@@ -83,6 +84,8 @@ def shuffle():
    labels = train_labels[p]
 
 SAVE=True
+RETRAIN=True
+#réduire pour éviter de prendre toute la ram
 BATCH_SIZE = 2
 
 def trainGraph(graph):
@@ -92,6 +95,8 @@ def trainGraph(graph):
       tf.global_variables_initializer().run()
       saver = tf.train.Saver()
       print('Initialized')
+      if RETRAIN:
+         saver.restore(session, SAVE_PATH)
       #Epoch
       for step in range(NUM_STEPS):
         if iteration>TRAIN_DATASET_SIZE:
@@ -106,13 +111,13 @@ def trainGraph(graph):
         if (step % 50 == 0):
             print(str(step) +"/"+str(NUM_STEPS)+ " training loss:", str(loss_value))
 #saves a model every 2 hours and maximum 4 latest models are saved.
+        if(step % 10==0):
             saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=1)#write_meta_graph=False
       if SAVE:
           saver.save(session,SAVE_PATH)
       print('Done')
 
-def testGraph2(graph):
-    print("test 2")
+def testGraphOnTestSet(graph):
     ix = random.randint(0, TEST_DATASET_SIZE-1)
     check_data = np.expand_dims(np.array(images[ix]), axis=0)
     with tf.Session(graph=graph) as session:
@@ -133,9 +138,9 @@ def testGraph2(graph):
         imshow(check_train_mask.squeeze().astype(np.uint8))
         plt.show()
 
+"""
 def testGraph(graph):
-    print("test 1")
-    ix = random.randint(0, TEST_DATASET_SIZE-1) #len(X_test) - 1 = 64
+    ix = random.randint(0, TEST_DATASET_SIZE-1)
     test_image = test_dataset[ix].astype(float)[:, :, 0]
     imshow(test_image)
     plt.show()
@@ -151,7 +156,7 @@ def testGraph(graph):
                     test_mask[i][j] = int(sigmoid(test_mask[i][j])*255)
         imshow(test_mask.squeeze().astype(np.uint8))
         plt.show()
-
+"""
 
 graph = tf.Graph()
 BASE_LEARNING_RATE = 1e-4
@@ -238,7 +243,7 @@ with graph.as_default():
 
 
       
-trainGraph(graph)
-testGraph(graph)
 
-testGraph2(graph)
+#testGraph(graph)
+#trainGraph(graph)
+testGraphOnTestSet(graph)
