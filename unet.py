@@ -8,13 +8,13 @@ Created on Thu Nov  1 15:57:51 2018
 import numpy as np
 
 import math
-import matplotlib.pyplot as plt
 import random
 import tensorflow as tf
-from skimage.io import  imshow
+
 
 from tensorflow.python.ops import array_ops
 from six.moves import cPickle as pickle
+import TestPrediction
 
 PICKLE_FILE = 'data.pickle'
 SAVE_PATH = 'Model/unet/model.ckpt'
@@ -24,7 +24,7 @@ with open (PICKLE_FILE,'rb') as f:
     train_dataset = save['train_images']
     train_labels=save['train_mask']
     test_dataset = save['test_image']
-    
+    test_labels = save['test_labels']
     IMG_WIDTH = save['IMG_WIDTH']
     IMG_HEIGHT = save['IMG_WIDTH']
     IMG_CHANNELS = save['IMG_CHANNELS']
@@ -74,6 +74,7 @@ def sigmoid(x):
 
 
 NUM_STEPS = 100#00
+
 images = train_dataset
 labels = train_labels
 
@@ -117,50 +118,26 @@ def trainGraph(graph):
           saver.save(session,SAVE_PATH)
       print('Done')
 
-def testGraphOnTestSet(graph):
+def testGraphOnTestSet(graph,path,test_labels,test_images):
     ix = random.randint(0, TEST_DATASET_SIZE-1)
-    check_data = np.expand_dims(np.array(images[ix]), axis=0)
-    with tf.Session(graph=graph) as session:
-        plt.figure(1)
-        saver = tf.train.Saver()
-        saver.restore(session, SAVE_PATH)
-        check_train = {tf_train_dataset:check_data}
-        check_train_mask = session.run(logits,feed_dict=check_train)
-        true_mask = labels[ix].astype(float)[:, :, 0]
-        print("original image")
-        plt.subplot(221)
-        plt.title("original image")
-        imshow(images[ix].astype(float)[:, :, 0])
-        plt.subplot(222)
-        plt.title("true mask")
-        print(true_mask.shape)
-        imshow(true_mask.squeeze().astype(np.uint8))
-        plt.subplot(223)
-        plt.title("produced mask")
-        print("produced mask")
-        print(check_train_mask.shape)
-        imshow(check_train_mask.squeeze().astype(np.uint8))
-        plt.show()
+    check_data = np.expand_dims(np.array(test_images[ix]), axis=0)
 
-"""
-def testGraph(graph):
-    ix = random.randint(0, TEST_DATASET_SIZE-1)
-    test_image = test_dataset[ix].astype(float)[:, :, 0]
-    imshow(test_image)
-    plt.show()
     with tf.Session(graph=graph) as session:
+
         saver = tf.train.Saver()
-        saver.restore(session, SAVE_PATH)
-        test_image = np.reshape(test_image, [-1, IMG_WIDTH , IMG_HEIGHT, 1])
-        test_data = {tf_train_dataset : test_image}
-        test_mask = session.run([logits],feed_dict=test_data)
-        test_mask = np.reshape(np.squeeze(test_mask), [IMG_WIDTH , IMG_HEIGHT, 1])
-        for i in range(IMG_WIDTH):
-            for j in range(IMG_HEIGHT):
-                    test_mask[i][j] = int(sigmoid(test_mask[i][j])*255)
-        imshow(test_mask.squeeze().astype(np.uint8))
-        plt.show()
-"""
+        saver.restore(session, path)
+        check_train = {tf_train_dataset:check_data}
+        check_mask = session.run(logits,feed_dict=check_train)
+        true_mask = test_labels[ix].astype(float)[:, :, 0]
+        img = test_images[ix];
+
+        true_mask = TestPrediction.reformatForTest(true_mask)
+        check_mask = TestPrediction.reformatForTest(check_mask)
+        check_mask = TestPrediction.toLabels(check_mask,240)
+        TestPrediction.plotImgvsTMaskVsPredMask(img,true_mask,check_mask)
+        fscore, acc, recall, pres, cmat = TestPrediction.evaluate(true_mask.flatten(),check_mask.flatten() ,2)
+        print('F-score: '+str(fscore)+'\tacc: '+str(acc),'\trecall: '+str(recall),'\tprecision: '+str(pres))
+        print(cmat)
 
 graph = tf.Graph()
 BASE_LEARNING_RATE = 1e-4
@@ -170,8 +147,7 @@ with graph.as_default():
   # Input data.
   tf_train_dataset =tf.placeholder(tf.float32, [None, IMG_WIDTH, IMG_HEIGHT, IMG_CHANNELS], name='data')
   tf_train_labels = tf.placeholder(tf.float32, [None, IMG_WIDTH, IMG_HEIGHT, 1], name='labels')
-  """tf_valid_dataset = tf.constant(valid_dataset)
-  tf_test_dataset = tf.constant(test_dataset)"""
+
   global_step = tf.Variable(0)
   # Variables.
   #5x5 filter depth: 32 
@@ -228,26 +204,14 @@ with graph.as_default():
       c9 = tf.nn.dropout(c9, 0.5, seed=SEED)
     return tf.layers.Conv2D(1,(1,1))(c9)
 
-  # Training computation: logits + cross-entropy loss.
   logits = model(tf_train_dataset, True)
   loss = tf.losses.sigmoid_cross_entropy(tf_train_labels, logits)
-
-  # Regularization 
-
-  # Optimizer.
-
-  #learning_rate = tf.train.exponential_decay(BASE_LEARNING_RATE,global_step, DECAY_STEP, DECAY_RATE,staircase=True)
-      
-  #optimizer = tf.train.MomentumOptimizer(learning_rate,0.9).minimize(loss,global_step=global_step) 
   optimizer = tf.train.AdamOptimizer(BASE_LEARNING_RATE).minimize(loss)
- # Predictions for the training, validation, and test data.
-  """train_prediction = tf.nn.softmax(logits)
-  valid_prediction = tf.nn.softmax(model(tf_valid_dataset))
-  test_prediction = tf.nn.softmax(model(tf_test_dataset))"""
+
 
 
       
 
-#testGraph(graph)
+
 #trainGraph(graph)
-testGraphOnTestSet(graph)
+testGraphOnTestSet(graph,SAVE_PATH,test_labels,test_dataset)
