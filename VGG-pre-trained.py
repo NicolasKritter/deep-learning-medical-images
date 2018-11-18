@@ -19,21 +19,30 @@ tf.set_random_seed(SEED)
 VGG_PATH ="./Pre-trained/VGG"
 PICKLE_FILE = 'data.pickle'
 #https://medium.com/nanonets/how-to-do-image-segmentation-using-deep-learning-c673cc5862ef
+SAVE_PATH = 'Model/VGG/model.ckpt'
+
 with open (PICKLE_FILE,'rb') as f:
     save = pickle.load(f)
     train_dataset = save['train_images']
     train_labels=save['train_mask']
-    test_dataset = save['test_image']    
+    test_dataset = save['test_image']
+    test_labels = save['test_labels']
+    IMG_WIDTH = save['IMG_WIDTH']
+    IMG_HEIGHT = save['IMG_WIDTH']
+    IMG_CHANNELS = save['IMG_CHANNELS']
+    
+    TRAIN_DATASET_SIZE = save['TRAIN_DATASET_SIZE']
+    TEST_DATASET_SIZE = save['TEST_DATASET_SIZE']
     del save #help gc to free memory
     del PICKLE_FILE
     print('Training set (images masks)',train_dataset.shape,train_labels.shape)
     print('Test set',test_dataset.shape)
     
     
-num_classes = 2
-image_shape = (IMG_WIDTH, IMG_HEIGHT)
+NUMBER_OF_CLASSES = 2
+IMAGE_SHAPE = (IMG_WIDTH, IMG_HEIGHT)
 EPOCHS = 40
-BATCH_SIZE = 16
+BATCH_SIZE = 2
 DROPOUT = 0.75
 
 correct_label = tf.placeholder(tf.float32, [None, IMAGE_SHAPE[0], IMAGE_SHAPE[1], NUMBER_OF_CLASSES])
@@ -49,6 +58,7 @@ def load_vgg(sess, VGG_PATH):
   # Get Tensors to be returned from graph
   graph = tf.get_default_graph()
   image_input = graph.get_tensor_by_name('image_input:0')
+  image_input = tf.reshape(image_input,[2,128,128,1])
   keep_prob = graph.get_tensor_by_name('keep_prob:0')
   layer3 = graph.get_tensor_by_name('layer3_out:0')
   layer4 = graph.get_tensor_by_name('layer4_out:0')
@@ -91,7 +101,7 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
   correct_label_reshaped = tf.reshape(correct_label, (-1, num_classes))
 
   # Calculate distance from actual labels using cross entropy
-  cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=correct_label_reshaped[:])
+  cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=correct_label_reshaped[:])
   # Take mean for total loss
   loss_op = tf.reduce_mean(cross_entropy, name="fcn_loss")
 
@@ -127,7 +137,8 @@ def shuffle():
    images = train_dataset[p]
    labels = train_labels[p]
 
-NUM_STEPS = 200
+NUM_STEPS = 10
+SAVE=True
 def get_batches_fn(batch_size):
     iteration = 0
     resdata = []
@@ -142,23 +153,23 @@ def get_batches_fn(batch_size):
         iteration +=1
         resdata.append(batch_data)
         reslabel.append(batch_labels)
-    return resdata,reslabel
+
 
 def run():
-    
+  iteration = 0
   with tf.Session() as session:
         
     # Returns the three layers, keep probability and input layer from the vgg architecture
     image_input, keep_prob, layer3, layer4, layer7 = load_vgg(session, VGG_PATH)
 
     # The resulting network architecture from adding a decoder on top of the given vgg model
-    model_output = layers(layer3, layer4, layer7, num_classes)
+    model_output = layers(layer3, layer4, layer7, NUMBER_OF_CLASSES)
 
     # Returns the output logits, training operation and cost operation to be used
     # - logits: each row represents a pixel, each column a class
     # - train_op: function used to get the right parameters to the model to correctly label the pixels
     # - cross_entropy_loss: function outputting the cost which we are minimizing, lower cost should yield higher accuracy
-    logits, train_op, cross_entropy_loss = optimize(model_output, correct_label, learning_rate, num_classes)
+    logits, train_op, cross_entropy_loss = optimize(model_output, correct_label, learning_rate, NUMBER_OF_CLASSES)
     
     # Initialize all variables
     session.run(tf.global_variables_initializer())
@@ -167,10 +178,66 @@ def run():
     print("Model build successful, starting training")
 
     # Train the neural network
-    train_nn(session, EPOCHS, BATCH_SIZE, get_batches_fn, 
+    """train_nn(session, EPOCHS, BATCH_SIZE, get_batches_fn, 
              train_op, cross_entropy_loss, image_input,
              correct_label, keep_prob, learning_rate)
+"""
+    saver = tf.train.Saver()
+    if RETRAIN:
+         saver.restore(session, SAVE_PATH)
+      #Epoch
+    keep_prob_value = 0.5
+    learning_rate_value = 0.001
+    for step in range(NUM_STEPS):
+        if iteration>TRAIN_DATASET_SIZE:
+            shuffle()
+            iteration = 0
+        offset = (step * BATCH_SIZE) % (train_labels.shape[0] - BATCH_SIZE)
+        batch_data = train_dataset[offset:(offset + BATCH_SIZE), :]
+        batch_labels = train_labels[offset:(offset + BATCH_SIZE), :]
+        loss_value, _ = session.run([cross_entropy_loss, train_op],
+          feed_dict={image_input: batch_data, correct_label: batch_labels,
+          keep_prob: keep_prob_value, learning_rate:learning_rate_value})
+        iteration+=1
+        if (step % 10 == 0):
+            print(str(step) +"/"+str(NUM_STEPS)+ " training loss:", str(loss_value))
+    #saves a model every 2 hours and maximum 4 latest models are saved.
+        if(step % 10==0):
+            saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=1)#write_meta_graph=False
+    if SAVE:
+          saver.save(session,SAVE_PATH)
+    print('Done')
 
-    # Run the model with the test images and save each painted output image (roads painted green)
-    
-    print("All done!")
+RETRAIN = False
+def trainGraph(graph):
+    iteration = 0
+    print("Training graph")
+    with tf.Session(graph=graph) as session:
+      tf.global_variables_initializer().run()
+      saver = tf.train.Saver()
+      print('Initialized')
+      if RETRAIN:
+         saver.restore(session, SAVE_PATH)
+      #Epoch
+      keep_prob_value = 0.5
+      learning_rate_value = 0.001
+      for step in range(NUM_STEPS):
+        if iteration>TRAIN_DATASET_SIZE:
+            shuffle()
+            iteration = 0
+        offset = (step * BATCH_SIZE) % (train_labels.shape[0] - BATCH_SIZE)
+        batch_data = train_dataset[offset:(offset + BATCH_SIZE), :]
+        batch_labels = train_labels[offset:(offset + BATCH_SIZE), :]
+        loss_value, _ = session.run([cross_entropy_loss, train_op],
+          feed_dict={input_image: batch_data, correct_label: batch_labels,
+          keep_prob: keep_prob_value, learning_rate:learning_rate_value})
+        iteration+=1
+        if (step % 10 == 0):
+            print(str(step) +"/"+str(NUM_STEPS)+ " training loss:", str(loss_value))
+#saves a model every 2 hours and maximum 4 latest models are saved.
+        if(step % 10==0):
+            saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=1)#write_meta_graph=False
+      if SAVE:
+          saver.save(session,SAVE_PATH)
+      print('Done')
+run()
