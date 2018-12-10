@@ -37,7 +37,6 @@ with open (PICKLE_FILE,'rb') as f:
     print('Test set',test_dataset.shape)
     
 SEED = 42
-
 tf.set_random_seed(SEED)
 
 def deconv2d(input_tensor, filter_size, output_size, out_channels, in_channels, name, strides = [1, 1, 1, 1]):
@@ -48,9 +47,9 @@ def deconv2d(input_tensor, filter_size, output_size, out_channels, in_channels, 
     w = tf.get_variable(name=name, shape=filter_shape)
     h1 = tf.nn.conv2d_transpose(input_tensor, w, out_shape, strides, padding='SAME')
     return h1
-
+"""
 def conv2d(input_tensor, depth, kernel, name, strides=(1, 1), padding="SAME"):
-    return tf.layers.conv2d(input_tensor, filters=depth, kernel_size=kernel, strides=strides, padding=padding, activation=tf.nn.relu, name=name)
+    return tf.layers.conv2d(input_tensor, filters=depth, kernel_size=kernel, strides=strides, padding=padding, activation=tf.nn.relu, name=name)"""
 
 def conv2d_3x3(filters, name):
     return tf.layers.Conv2D(filters=filters, kernel_size=(3,3), activation=tf.nn.relu, padding='same', name=name)
@@ -66,11 +65,6 @@ def conv2d_transpose_2x2(filters, name):
 
 def concatenate(branches):
     return array_ops.concat(branches, 3)
-    
-def sigmoid(x):
-    x = x/10
-    return 1 / (1 + math.exp(-x))
-
 
 
 NUM_STEPS = 100#00
@@ -110,7 +104,7 @@ def trainGraph(graph):
         loss_value, _ = session.run([loss, optimizer], feed_dict=feed_dict)
         iteration+=1
         if (step % 50 == 0):
-            print(str(step) +"/"+str(NUM_STEPS)+ " training loss:", str(loss_value))
+             print(str(step) +"/"+str(NUM_STEPS)+ " training loss:", loss_value,"val_loss",val_loss.eval())
 #saves a model every 2 hours and maximum 4 latest models are saved.
         if(step % 10==0):
             saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=1)#write_meta_graph=False
@@ -141,19 +135,21 @@ def testGraphOnTestSet(graph,path,test_labels,test_images):
 
 graph = tf.Graph()
 BASE_LEARNING_RATE = 1e-4
-
+NUM_CLASS = 3
 with graph.as_default():
 
   # Input data.
   tf_train_dataset =tf.placeholder(tf.float32, [None, IMG_WIDTH, IMG_HEIGHT, IMG_CHANNELS], name='data')
   tf_train_labels = tf.placeholder(tf.float32, [None, IMG_WIDTH, IMG_HEIGHT, 1], name='labels')
-
+  tf_test_dataset = tf.constant(test_dataset)
+  tf_test_labels = tf.constant(test_labels)
+  
   global_step = tf.Variable(0)
   # Variables.
   #5x5 filter depth: 32 
   
-  def model(data, train=False):
-    c1 = conv2d_3x3(32, "c1") (data)
+  def model(input_layer,num_class, train=False):
+    c1 = conv2d_3x3(32, "c1") (input_layer)
     c1 = drop_out(0.1) (c1)
     c1 = conv2d_3x3(32, "c1") (c1)
     p1 = max_pool() (c1)
@@ -202,12 +198,12 @@ with graph.as_default():
     c9 = conv2d_3x3(32, "c9") (c9)
     if train:
       c9 = tf.nn.dropout(c9, 0.5, seed=SEED)
-    return tf.layers.Conv2D(1,(1,1))(c9)
-
-  logits = model(tf_train_dataset, True)
-  loss = tf.losses.sigmoid_cross_entropy(tf_train_labels, logits)
+    return tf.layers.Conv2D(num_class,(1,1))(c9)
+#TODO val_loss
+  logits = model(tf_train_dataset,NUM_CLASS,True)
+  loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf_train_labels, logits=logits))
   optimizer = tf.train.AdamOptimizer(BASE_LEARNING_RATE).minimize(loss)
-
+  val_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf_test_labels, logits=model(tf_test_dataset,NUM_CLASS,True)))
 
 
       
