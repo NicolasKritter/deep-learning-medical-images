@@ -28,6 +28,7 @@
 - [Unet for medical image segmentation](https://www.kaggle.com/bluejay9676/vanila-u-net)
 - [Image Segmentation Using DIGITS 5](https://devblogs.nvidia.com/image-segmentation-using-digits-5/)
 - [SegNet: A Deep Convolutional Encoder-Decoder Architecture for Image Segmentation](https://arxiv.org/pdf/1511.00561.pdf)
+- [Understanding the resnet architecture](https://medium.com/@14prakash/understanding-and-implementing-architectures-of-resnet-and-resnext-for-state-of-the-art-image-cf51669e1624)
 
 ## Resarch Papers
 - [Segmentation and classification of colon glands with deep convolutional neural networks and total variation regularization](https://peerj.com/articles/3874/) (leNet5)
