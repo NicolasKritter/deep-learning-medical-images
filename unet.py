@@ -199,7 +199,7 @@ with graph.as_default():
     if train:
       c9 = tf.nn.dropout(c9, 0.5, seed=SEED)
     return tf.layers.Conv2D(num_class,(1,1))(c9)
-#TODO val_loss
+
   logits = model(tf_train_dataset,NUM_CLASS,True)
   loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf_train_labels, logits=logits))
   optimizer = tf.train.AdamOptimizer(BASE_LEARNING_RATE).minimize(loss)
@@ -211,3 +211,5 @@ with graph.as_default():
 
 #trainGraph(graph)
 testGraphOnTestSet(graph,SAVE_PATH,test_labels,test_dataset)
+#TestPrediction.testGraphOnTestSet(graph,SAVE_PATH,test_labels,test_dataset,TEST_DATASET_SIZE)
+

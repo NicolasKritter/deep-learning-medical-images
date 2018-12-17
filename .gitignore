@@ -1,4 +1,5 @@
 #data
+test/*
 data/*/*
 *.tar.gz
 *.pickle

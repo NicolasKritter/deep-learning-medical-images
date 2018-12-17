@@ -60,3 +60,25 @@ def toLabels(pred,treshold):
     np.putmask(pred,pred>=treshold,0)
     return pred
     
+
+
+def testGraphOnTestSet(graph,path,test_labels,test_images,TEST_DATASET_SIZE):
+    ix = random.randint(0, TEST_DATASET_SIZE-1)
+    check_data = np.expand_dims(np.array(test_images[ix]), axis=0)
+
+    with tf.Session(graph=graph) as session:
+
+        saver = tf.train.Saver()
+        saver.restore(session, path)
+        check_train = {tf_train_dataset:check_data}
+        check_mask = session.run(logits,feed_dict=check_train)
+        true_mask = test_labels[ix].astype(float)[:, :, 0]
+        img = test_images[ix];
+
+        true_mask = reformatForTest(true_mask)
+        check_mask = reformatForTest(check_mask)
+        check_mask = toLabels(check_mask,240)
+        plotImgvsTMaskVsPredMask(img,true_mask,check_mask)
+        fscore, acc, recall, pres, cmat = evaluate(true_mask.flatten(),check_mask.flatten() ,2)
+        print('F-score: '+str(fscore)+'\tacc: '+str(acc),'\trecall: '+str(recall),'\tprecision: '+str(pres))
+        print(cmat)
