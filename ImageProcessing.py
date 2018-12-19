@@ -48,6 +48,15 @@ def getYellowMask(img):
     yellow_mask[np.where((yellow_mask >= LOWER_YELLOW).all(axis = 2))] = HOT_COEUR
     return yellow_mask   
 
+def getFullMaskFromImg(img,toOne=True):
+    if not toOne:
+       global HOT_COEUR,HOT_GAINE
+       HOT_COEUR*=255
+       HOT_GAINE*=255
+    m1 = getRedMask(img)
+    m2 = getYellowMask(img)
+    return mergeMasks([m1,m2])
+    
 def getFullMask(path,toOne=True):
     if not toOne:
         global HOT_COEUR,HOT_GAINE
