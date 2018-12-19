@@ -8,7 +8,8 @@ import numpy as np
 import tensorflow as tf
 from six.moves import cPickle as pickle
 from six.moves import range
-
+import TestPrediction
+import random
 
 SEED = 42
 IMG_WIDTH = 256
@@ -241,3 +242,25 @@ def trainGraph(graph):
           saver.save(session,SAVE_PATH)
       print('Done')
 run()
+
+def testGraphOnTestSet(path,test_labels,test_images):
+    ix = random.randint(0, TEST_DATASET_SIZE-1)
+    check_data = np.expand_dims(np.array(test_images[ix]), axis=0)
+
+    with tf.Session() as session:
+
+        saver = tf.train.Saver()
+        saver.restore(session, path)
+        check_train = {input_image:check_data}
+        check_mask = session.run([cross_entropy_loss, train_op],feed_dict=check_train)
+        true_mask = test_labels[ix].astype(float)[:, :, 0]
+        img = test_images[ix];
+
+        true_mask = TestPrediction.reformatForTest(true_mask)
+        check_mask = TestPrediction.reformatForTest(check_mask)
+        check_mask = TestPrediction.toLabels(check_mask,240)
+        TestPrediction.plotImgvsTMaskVsPredMask(img,true_mask,check_mask)
+        fscore, acc, recall, pres, cmat = TestPrediction.evaluate(true_mask.flatten(),check_mask.flatten() ,2)
+        print('F-score: '+str(fscore)+'\tacc: '+str(acc),'\trecall: '+str(recall),'\tprecision: '+str(pres))
+        print(cmat)
+testGraphOnTestSet(SAVE_PATH,test_labels,test_dataset)

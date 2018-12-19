@@ -116,7 +116,7 @@ def testGraphOnTestSet(graph,path,test_labels,test_images):
     ix = random.randint(0, TEST_DATASET_SIZE-1)
     check_data = np.expand_dims(np.array(test_images[ix]), axis=0)
 
-    with tf.Session(graph=graph) as session:
+    with tf.Session() as session:
 
         saver = tf.train.Saver()
         saver.restore(session, path)

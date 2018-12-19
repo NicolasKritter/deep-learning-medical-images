@@ -50,7 +50,7 @@ def getImagesNMasks(le_path):
            #print(mask_file)
             mask_ = cv2.imread(path + '/masks/' + mask_file)[:,:,:NB_CLASSES]
             mask_ = resize(mask_, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-            mask = mask_# mask_)
+            mask = ImageProcessing.getFullMask(mask_)# mask_)
         labels[n] = mask
     return images,labels,id_list  #convert images to [0;1]
 
@@ -106,7 +106,7 @@ def getTrainImagesNMasksBatch(num_batch):
            #print(mask_file)
             mask_ = cv2.imread(path + '/masks/' + mask_file)[:,:,:NB_CLASSES]
             mask_ = resize(mask_, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-            mask =mask_
+            mask =ImageProcessing.getFullMask(mask_)
         labels[n] = mask
     return images,labels
     
@@ -116,7 +116,7 @@ def extractImageNMask(path,id_):
     mask = np.zeros((IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
     mask_ = cv2.imread(path + '/masks/' + id_)[:,:,:NB_CLASSES]
     mask = resize(mask_, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-    mask = mask
+    mask = ImageProcessing.getFullMask(mask)
     return img,mask
         
 def test_labels():
