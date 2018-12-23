@@ -24,35 +24,63 @@ np.random.seed = 42
 
 IMG_WIDTH = 128 #256
 IMG_HEIGHT = 128 #256
-IMG_CHANNELS = 1 #3
-NB_CLASSES = 1
+IMG_CHANNELS = 3 #3
+MASK_CHANNELS = 3#1
+NB_CLASSES = 3#3
 PICKLE_FILE = 'data.pickle'
 TRAIN_PATH='data/train/'
 TEST_PATH='data/test/'
 EXTENSION = '.tif'
+#TYPE = '_GT'
+TYPE='_segmented'
+PROC='_PROC'
+def normalize(image,minC,maxC):
+    image= (image - minC) / (maxC - minC)
+    return image
 
-
+def zero_center(image):
+    image = image - image.mean()
+    return image
+    
+def normalizeImage(image):
+    minC,maxC = image.min(),image.max()
+    image=image.astype('float32')
+    image=normalize(image,minC,maxC)
+    image=zero_center(image)
+    return image 
+    
+def randomizeAngle(image,mask):
+    r = [0,90,180,270]
+    rot = np.random.choice(r)
+    image = ImageProcessing.rotation(image,rot)
+    mask = ImageProcessing.rotation(mask,rot)
+    return image,mask
+def extractImageNMask(path,id_):
+    img = cv2.imread(path + '/images/' + id_ + EXTENSION)[:,:,:IMG_CHANNELS]
+    img = cv2.resize(img, (IMG_HEIGHT, IMG_WIDTH), interpolation=cv2.INTER_CUBIC)
+    img = normalizeImage(img)
+    mask = cv2.imread(path + '/masks/' + id_+TYPE+EXTENSION)[:,:,:MASK_CHANNELS]
+    mask = ImageProcessing.getFullMaskFromImg(mask)
+    mask = cv2.resize(mask, (IMG_HEIGHT, IMG_WIDTH), interpolation=cv2.INTER_NEAREST)
+    return img,mask
+    
+WRITE=False
 def getImagesNMasks(le_path):
     print("Getting & Resizing train images and mask")
     id_list = next(os.walk(le_path))[1]
-    images = np.zeros((len(id_list),IMG_HEIGHT,IMG_WIDTH,IMG_CHANNELS),dtype=np.uint8)
-    labels = np.zeros((len(id_list),IMG_HEIGHT,IMG_WIDTH,1),dtype = np.bool)
+    size  = len(id_list)
+    images = np.zeros((size,IMG_HEIGHT,IMG_WIDTH,IMG_CHANNELS),dtype="float32")
+    labels = np.zeros((size,IMG_HEIGHT,IMG_WIDTH),dtype="uint8")#uint8
     sys.stdout.flush()
     for n, id_ in tqdm(enumerate(id_list), total=len(id_list)):
         path = le_path + id_
-        print(id_)
-        img = cv2.imread(path + '/images/' + id_ + EXTENSION,IMG_CHANNELS)[:,:,:IMG_CHANNELS]
-        img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-        images[n] = normalizeImage(img)
-
-        mask = np.zeros((IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
-        for mask_file in next(os.walk(path + '/masks/'))[2]:
-           #print(mask_file)
-            mask_ = cv2.imread(path + '/masks/' + mask_file)[:,:,:NB_CLASSES]
-            mask_ = resize(mask_, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-            mask = ImageProcessing.getFullMaskFromImg(mask_)# mask_)
-        labels[n] = mask
-    return images,labels,id_list  #convert images to [0;1]
+        images[n],labels[n] = extractImageNMask(path,id_)
+        """
+        if WRITE:
+            cv2.imwrite(path + '/images/' + id_+PROC+EXTENSION,images[n])
+            cv2.imwrite(path + '/mask/' + id_+PROC+EXTENSION,labels[n])
+"""
+    return images,labels,size  #convert images to [0;1]
 
 
 
@@ -69,8 +97,11 @@ def savePickleData(pickle_file,save,force:False):
             raise
     return os.stat(pickle_file)
  
-train_images,train_mask,train_ids = getImagesNMasks(TRAIN_PATH)
-test_images,test_labels,test_ids = getImagesNMasks(TEST_PATH)
+train_images,train_mask,train_size = getImagesNMasks(TRAIN_PATH)
+train_images,train_mask = ImageProcessing.formatData(train_images,train_mask,3)
+
+test_images,test_labels,test_size = getImagesNMasks(TEST_PATH)
+test_images,test_labels = ImageProcessing.formatData(test_images,test_labels,3)
 
 def saveData():
     
@@ -82,64 +113,43 @@ def saveData():
         'IMG_WIDTH':IMG_WIDTH,
         'IMG_HEIGHT':IMG_HEIGHT,
         'IMG_CHANNELS':IMG_CHANNELS,
-        'TEST_DATASET_SIZE':len(test_ids),
-        'TRAIN_DATASET_SIZE':len(train_ids)
+        'TEST_DATASET_SIZE':test_size,
+        'TRAIN_DATASET_SIZE':train_size
         }
-    print('Data saved')
     savePickleData(PICKLE_FILE,save,True)
+    print('Data saved')
 
 def getTrainImagesNMasksBatch(num_batch):
     print("Getting & Resizing train images and mask")
     id_list = next(os.walk(TRAIN_PATH))[1]
-    images = np.zeros((num_batch,IMG_HEIGHT,IMG_WIDTH,IMG_CHANNELS),dtype=np.uint8)
-    labels = np.zeros((num_batch,IMG_HEIGHT,IMG_WIDTH,1),dtype = np.bool)
+    images = np.zeros((len(id_list),IMG_HEIGHT,IMG_WIDTH,IMG_CHANNELS),dtype="float32")
+    labels = np.zeros((len(id_list),IMG_HEIGHT,IMG_WIDTH,NB_CLASSES),dtype="uint8")
     sys.stdout.flush()
     for n, id_ in tqdm(enumerate(id_list), total=len(id_list)):
         path = TRAIN_PATH + id_
         print(id_)
-        img = cv2.imread(path + '/images/' + id_ + EXTENSION,IMG_CHANNELS)[:,:,:IMG_CHANNELS]
-        img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-        images[n] = normalizeImage(img)
-
-        mask = np.zeros((IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
-        for mask_file in next(os.walk(path + '/masks/'))[2]:
-           #print(mask_file)
-            mask_ = cv2.imread(path + '/masks/' + mask_file)[:,:,:NB_CLASSES]
-            mask_ = resize(mask_, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-            mask =ImageProcessing.getFullMaskFromImg(mask_)
-        labels[n] = mask
+        images[n],labels[n] = extractImageNMask(path,id_)
     return images,labels
     
-def extractImageNMask(path,id_):
-    img = cv2.imread(path + '/images/' + id_ + EXTENSION,IMG_CHANNELS)[:,:,:IMG_CHANNELS]
-    img = resize(img, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-    mask = np.zeros((IMG_HEIGHT, IMG_WIDTH, 1), dtype=np.bool)
-    mask_ = cv2.imread(path + '/masks/' + id_)[:,:,:NB_CLASSES]
-    mask = resize(mask_, (IMG_HEIGHT, IMG_WIDTH), mode='constant', preserve_range=True)
-    mask = ImageProcessing.getFullMaskFromImg(mask)
-    return img,mask
+
         
-def test_labels():
+def test_data():
     plt.title("testing")
-    ix = random.randint(0, len(train_ids)-1) #len(X_test) - 1 = 64
-    test_image = train_mask[ix].astype(float)[:, :, 0]
+    ix = random.randint(0, train_size-1) #len(X_test) - 1 = 64
+    test_image = train_mask[ix].astype(float)[:, :]
+    imshow(test_image)
+    plt.show()
+    test_image = train_images[ix].astype(float)[:, :, :IMG_CHANNELS]
+    imshow(test_image)
+    plt.show()
+    ix2 = random.randint(0, test_size-1)
+    test_image = test_images[ix2].astype(float)[:, :, :IMG_CHANNELS]
+    imshow(test_image)
+    plt.show()
+    test_image = test_labels[ix2].astype(float)[:, :, :IMG_CHANNELS]
     imshow(test_image)
     plt.show()
 
-
-def normalize(image,minC,maxC):
-    image= (image - minC) / (maxC - minC)
-    return image
-
-def zero_center(image):
-    image = image - image.mean()
-    return image
-    
-def normalizeImage(image):
-    minC,maxC = image.min(),image.max()
-    image=image.astype('float32')
-    image=normalize(image,minC,maxC)
-    image=zero_center(image)
-    return image
-#test_labels()
-#saveData()
+if __name__ == '__main__':
+    #test_data()
+    saveData()

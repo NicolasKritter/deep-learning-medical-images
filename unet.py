@@ -10,11 +10,12 @@ import numpy as np
 import math
 import random
 import tensorflow as tf
-
+import matplotlib.pyplot as plt
 
 from tensorflow.python.ops import array_ops
 from six.moves import cPickle as pickle
 import TestPrediction
+from ImageProcessing import rotation
 
 PICKLE_FILE = 'data.pickle'
 SAVE_PATH = 'Model/unet/model.ckpt'
@@ -33,7 +34,7 @@ with open (PICKLE_FILE,'rb') as f:
     TEST_DATASET_SIZE = save['TEST_DATASET_SIZE']
     del save #help gc to free memory
     del PICKLE_FILE
-    print('Training set (images masks)',train_dataset.shape,train_labels.shape)
+    print('Training set (images, masks)',train_dataset.shape,train_labels.shape)
     print('Test set',test_dataset.shape)
     
 SEED = 42
@@ -47,12 +48,12 @@ def deconv2d(input_tensor, filter_size, output_size, out_channels, in_channels, 
     w = tf.get_variable(name=name, shape=filter_shape)
     h1 = tf.nn.conv2d_transpose(input_tensor, w, out_shape, strides, padding='SAME')
     return h1
-"""
-def conv2d(input_tensor, depth, kernel, name, strides=(1, 1), padding="SAME"):
-    return tf.layers.conv2d(input_tensor, filters=depth, kernel_size=kernel, strides=strides, padding=padding, activation=tf.nn.relu, name=name)"""
 
-def conv2d_3x3(filters, name):
-    return tf.layers.Conv2D(filters=filters, kernel_size=(3,3), activation=tf.nn.relu, padding='same', name=name)
+def conv2d( depth, kernel=(1,1), strides=(1, 1),activation=tf.nn.relu, padding="same",name="conv2d"):
+    return tf.layers.Conv2D(filters=depth, kernel_size=kernel, strides=strides, padding=padding, activation=activation, name=name)
+
+def conv2d_3x3(depth, name):
+    return tf.layers.Conv2D(filters=depth, kernel_size=(3,3), activation=tf.nn.relu, padding='same', name=name)
 
 def max_pool():
     return tf.layers.MaxPooling2D((2,2), strides=2, padding='same') 
@@ -79,17 +80,21 @@ def shuffle():
    labels = train_labels[p]
 
 SAVE=True
-RETRAIN=True
+RETRAIN=False
 #réduire pour éviter de prendre toute la ram
-BATCH_SIZE = 2
 
+BATCH_SIZE = 2
 def trainGraph(graph):
+    t_loss = []
+    v_loss = []
     iteration = 0
     print("Training graph")
     with tf.Session(graph=graph) as session:
       tf.global_variables_initializer().run()
-      saver = tf.train.Saver()
       print('Initialized')
+      saver = tf.train.Saver()
+      #saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=1)
+
       if RETRAIN:
          saver.restore(session, SAVE_PATH)
       #Epoch
@@ -103,47 +108,55 @@ def trainGraph(graph):
         feed_dict = {tf_train_dataset : batch_data, tf_train_labels : batch_labels}
         loss_value, _ = session.run([loss, optimizer], feed_dict=feed_dict)
         iteration+=1
-        if (step % 50 == 0):
-             print(str(step) +"/"+str(NUM_STEPS)+ " training loss:", loss_value,"val_loss",val_loss.eval())
+        if (step % 10 == 0):
+            t_loss.append(loss_value)
+            vl = val_loss.eval()
+            v_loss.append(vl)
+            print(str(step) +"/"+str(NUM_STEPS)+ " training loss:", loss_value,"val_loss",vl)
 #saves a model every 2 hours and maximum 4 latest models are saved.
-        if(step % 10==0):
-            saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=1)#write_meta_graph=False
-      if SAVE:
-          saver.save(session,SAVE_PATH)
-      print('Done')
+        if(step % 10==0 and SAVE):
+            saver.save(session,SAVE_PATH)#write_meta_graph=False
+      if (SAVE and step % 10!=0) :
+        saver.save(session,SAVE_PATH)
+    x = np.arange(len(v_loss))*2
+    plt.plot(x,t_loss)
+    plt.plot(x,v_loss)
+    plt.legend(['train_loss','val_loss'], loc='upper left')
+    plt.show()
+    print('Done')
 
 def testGraphOnTestSet(graph,path,test_labels,test_images):
     ix = random.randint(0, TEST_DATASET_SIZE-1)
-    check_data = np.expand_dims(np.array(test_images[ix]), axis=0)
-
-    with tf.Session() as session:
+    img = test_images[ix];
+    check_data = np.expand_dims(np.array(img), axis=0)
+    with tf.Session(graph=graph) as session:
 
         saver = tf.train.Saver()
         saver.restore(session, path)
         check_train = {tf_train_dataset:check_data}
         check_mask = session.run(logits,feed_dict=check_train)
-        true_mask = test_labels[ix].astype(float)[:, :, 0]
-        img = test_images[ix];
-
+        true_mask = test_labels[ix]
         true_mask = TestPrediction.reformatForTest(true_mask)
-        check_mask = TestPrediction.reformatForTest(check_mask)
-        check_mask = TestPrediction.toLabels(check_mask,240)
+        check_mask = TestPrediction.reformatForTest(check_mask[0])
         TestPrediction.plotImgvsTMaskVsPredMask(img,true_mask,check_mask)
-        fscore, acc, recall, pres, cmat = TestPrediction.evaluate(true_mask.flatten(),check_mask.flatten() ,2)
+        fscore, acc, recall, pres, cmat = TestPrediction.evaluate(true_mask.flatten(),check_mask.flatten() ,NB_CLASSES)
         print('F-score: '+str(fscore)+'\tacc: '+str(acc),'\trecall: '+str(recall),'\tprecision: '+str(pres))
         print(cmat)
 
 graph = tf.Graph()
 BASE_LEARNING_RATE = 1e-4
-NUM_CLASS = 3
+NB_CLASSES = 3
 with graph.as_default():
 
   # Input data.
   tf_train_dataset =tf.placeholder(tf.float32, [None, IMG_WIDTH, IMG_HEIGHT, IMG_CHANNELS], name='data')
-  tf_train_labels = tf.placeholder(tf.float32, [None, IMG_WIDTH, IMG_HEIGHT, 1], name='labels')
+  tf_train_labels = tf.placeholder(tf.uint8, [None, IMG_WIDTH, IMG_HEIGHT, NB_CLASSES], name='labels')
   tf_test_dataset = tf.constant(test_dataset)
   tf_test_labels = tf.constant(test_labels)
   
+  """tf_test_labels = tf.one_hot(tf_test_labels, NB_CLASSES)
+  tf_train_labels2 = tf.one_hot(tf_train_labels, NB_CLASSES)
+  print("size",tf_train_labels2.shape)"""
   global_step = tf.Variable(0)
   # Variables.
   #5x5 filter depth: 32 
@@ -198,12 +211,15 @@ with graph.as_default():
     c9 = conv2d_3x3(32, "c9") (c9)
     if train:
       c9 = tf.nn.dropout(c9, 0.5, seed=SEED)
-    return tf.layers.Conv2D(num_class,(1,1))(c9)
-
-  logits = model(tf_train_dataset,NUM_CLASS,True)
+    
+    output_layer = conv2d(num_class, kernel=(1,1), padding="same", activation=None)(c9)
+    return output_layer
+#TODO class weights
+  #weighted = tf.multiply(tf_train_labels, class_weights)
+  logits = model(tf_train_dataset,NB_CLASSES,True)
   loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf_train_labels, logits=logits))
-  optimizer = tf.train.AdamOptimizer(BASE_LEARNING_RATE).minimize(loss)
-  val_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf_test_labels, logits=model(tf_test_dataset,NUM_CLASS,True)))
+  optimizer =  tf.train.AdamOptimizer(BASE_LEARNING_RATE).minimize(loss)
+  val_loss =tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf_test_labels, logits=model(tf_test_dataset,NB_CLASSES,True)))
 
 
       

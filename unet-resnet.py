@@ -14,6 +14,7 @@ from six.moves import cPickle as pickle
 from six.moves import range
 from tensorflow.python.ops import array_ops
 import random
+import matplotlib.pyplot as plt
 
 import TestPrediction
 
@@ -56,8 +57,8 @@ def deconv2d(input_tensor, filter_size, output_size, out_channels, in_channels, 
     h1 = tf.nn.conv2d_transpose(input_tensor, w, out_shape, strides, padding='same')
     return h1
     
-def conv2d(input_tensor, depth, kernel, strides=(1, 1),activation=tf.nn.relu, padding="same",name="conv2d"):
-    return tf.layers.conv2d(input_tensor, filters=depth, kernel_size=kernel, strides=strides, padding=padding, activation=tf.nn.relu, name=name)
+def conv2d( depth, kernel=(1,1), strides=(1, 1),activation=tf.nn.relu, padding="same",name="conv2d"):
+    return tf.layers.Conv2D(filters=depth, kernel_size=kernel, strides=strides, padding=padding, activation=activation, name=name)
 
 def conv2d_3x3(filters, name="name"):
     return tf.layers.Conv2D(filters=filters, kernel_size=(3,3), activation=tf.nn.relu, padding='same', name=name)
@@ -108,17 +109,21 @@ def shuffle():
    labels = train_labels[p]
 
 SAVE=True
-RETRAIN=True
+RETRAIN=False
 #réduire pour éviter de prendre toute la ram
-BATCH_SIZE = 2
 
+BATCH_SIZE = 2
 def trainGraph(graph):
+    t_loss = []
+    v_loss = []
     iteration = 0
     print("Training graph")
     with tf.Session(graph=graph) as session:
       tf.global_variables_initializer().run()
-      saver = tf.train.Saver()
       print('Initialized')
+      saver = tf.train.Saver()
+      #saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=1)
+
       if RETRAIN:
          saver.restore(session, SAVE_PATH)
       #Epoch
@@ -132,44 +137,49 @@ def trainGraph(graph):
         feed_dict = {tf_train_dataset : batch_data, tf_train_labels : batch_labels}
         loss_value, _ = session.run([loss, optimizer], feed_dict=feed_dict)
         iteration+=1
-        if (step % 50 == 0):
-            print(str(step) +"/"+str(NUM_STEPS)+ " training loss:", loss_value,"val_loss",val_loss.eval())
+        if (step % 10 == 0):
+            t_loss.append(loss_value)
+            vl = val_loss.eval()
+            v_loss.append(vl)
+            print(str(step) +"/"+str(NUM_STEPS)+ " training loss:", loss_value,"val_loss",vl)
 #saves a model every 2 hours and maximum 4 latest models are saved.
-        if(step % 10==0):
-            saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=1)#write_meta_graph=False
-      if SAVE:
-          saver.save(session,SAVE_PATH)
-      print('Done')
+        if(step % 10==0 and SAVE):
+            saver.save(session,SAVE_PATH)#write_meta_graph=False
+      if (SAVE and step % 10!=0) :
+        saver.save(session,SAVE_PATH)
+    x = np.arange(len(v_loss))*2
+    plt.plot(x,t_loss)
+    plt.plot(x,v_loss)
+    plt.legend(['train_loss','val_loss'], loc='upper left')
+    plt.show()
+    print('Done')
 
 def testGraphOnTestSet(graph,path,test_labels,test_images):
     ix = random.randint(0, TEST_DATASET_SIZE-1)
-    check_data = np.expand_dims(np.array(test_images[ix]), axis=0)
-
+    img = test_images[ix];
+    check_data = np.expand_dims(np.array(img), axis=0)
     with tf.Session(graph=graph) as session:
 
         saver = tf.train.Saver()
         saver.restore(session, path)
         check_train = {tf_train_dataset:check_data}
         check_mask = session.run(logits,feed_dict=check_train)
-        true_mask = test_labels[ix].astype(float)[:, :, 0]
-        img = test_images[ix];
-
+        true_mask = test_labels[ix]
         true_mask = TestPrediction.reformatForTest(true_mask)
-        check_mask = TestPrediction.reformatForTest(check_mask)
-        check_mask = TestPrediction.toLabels(check_mask,240)
+        check_mask = TestPrediction.reformatForTest(check_mask[0])
         TestPrediction.plotImgvsTMaskVsPredMask(img,true_mask,check_mask)
-        fscore, acc, recall, pres, cmat = TestPrediction.evaluate(true_mask.flatten(),check_mask.flatten() ,2)
+        fscore, acc, recall, pres, cmat = TestPrediction.evaluate(true_mask.flatten(),check_mask.flatten() ,NB_CLASSES)
         print('F-score: '+str(fscore)+'\tacc: '+str(acc),'\trecall: '+str(recall),'\tprecision: '+str(pres))
         print(cmat)
 
 graph = tf.Graph()
 BASE_LEARNING_RATE = 1e-4
-NUM_CLASS = 3
+NB_CLASSES = 3
 with graph.as_default():
 
   # Input data.
   tf_train_dataset =tf.placeholder(tf.float32, [None, IMG_WIDTH, IMG_HEIGHT, IMG_CHANNELS], name='data')
-  tf_train_labels = tf.placeholder(tf.float32, [None, IMG_WIDTH, IMG_HEIGHT, 1], name='labels')
+  tf_train_labels = tf.placeholder(tf.float32, [None, IMG_WIDTH, IMG_HEIGHT, NB_CLASSES], name='labels')
   
   tf_test_dataset = tf.constant(test_dataset)
   tf_test_labels = tf.constant(test_labels)
@@ -184,32 +194,32 @@ with graph.as_default():
     conv1 = conv2d_3x3(start_neurons * 1, "c1")(input_layer)
     conv1 = residual_block(conv1,start_neurons * 1)
     conv1 = residual_block(conv1,start_neurons * 1, True)
-    pool1 = max_pool((2, 2))(conv1)
+    pool1 = max_pool(2, 2)(conv1)
     pool1 = drop_out(DropoutRatio/2)(pool1)
 
     # 50 -> 25
     conv2 = conv2d_3x3(start_neurons * 2, "c2")(pool1)
     conv2 = residual_block(conv2,start_neurons * 2)
     conv2 = residual_block(conv2,start_neurons * 2, True)
-    pool2 = max_pool((2, 2))(conv2)
+    pool2 = max_pool(2, 2)(conv2)
     pool2 = drop_out(DropoutRatio)(pool2)
 
     # 25 -> 12
     conv3 = conv2d_3x3(start_neurons * 4,"c3")(pool2)
     conv3 = residual_block(conv3,start_neurons * 4)
     conv3 = residual_block(conv3,start_neurons * 4, True)
-    pool3 = max_pool((2, 2))(conv3)
+    pool3 = max_pool(2, 2)(conv3)
     pool3 = drop_out(DropoutRatio)(pool3)
 
     # 12 -> 6
     conv4 = conv2d_3x3(start_neurons * 8, "c4")(pool3)
     conv4 = residual_block(conv4,start_neurons * 8)
     conv4 = residual_block(conv4,start_neurons * 8, True)
-    pool4 = max_pool((2, 2))(conv4)
+    pool4 = max_pool(2, 2)(conv4)
     pool4 = drop_out(DropoutRatio)(pool4)
 
     # Middle
-    convm = conv2d_3x3(start_neurons * 16, (3, 3), "c5")(pool4)
+    convm = conv2d_3x3(start_neurons * 16, "c5")(pool4)
     convm = residual_block(convm,start_neurons * 16)
     convm = residual_block(convm,start_neurons * 16, True)
     
@@ -218,7 +228,7 @@ with graph.as_default():
     uconv4 = concatenate([deconv4, conv4])
     uconv4 = drop_out(DropoutRatio)(uconv4)
     
-    uconv4 = conv2d_3x3(start_neurons * 8, (3, 3),"unconv4")(uconv4)
+    uconv4 = conv2d_3x3(start_neurons * 8,"unconv4")(uconv4)
     uconv4 = residual_block(uconv4,start_neurons * 8)
     uconv4 = residual_block(uconv4,start_neurons * 8, True)
     
@@ -237,7 +247,7 @@ with graph.as_default():
     uconv2 = concatenate([deconv2, conv2])
         
     uconv2 = drop_out(DropoutRatio)(uconv2)
-    uconv2 = conv2d_3x3(start_neurons * 2, (3, 3),"unconv2")(uconv2)
+    uconv2 = conv2d_3x3(start_neurons * 2,"unconv2")(uconv2)
     uconv2 = residual_block(uconv2,start_neurons * 2)
     uconv2 = residual_block(uconv2,start_neurons * 2, True)
     
@@ -247,23 +257,23 @@ with graph.as_default():
     uconv1 = concatenate([deconv1, conv1])
     
     uconv1 = drop_out(DropoutRatio)(uconv1)
-    uconv1 = conv2d_3x3(start_neurons * 1, (3, 3), "unconv1")(uconv1)
+    uconv1 = conv2d_3x3(start_neurons * 1, "unconv1")(uconv1)
     uconv1 = residual_block(uconv1,start_neurons * 1)
     uconv1 = residual_block(uconv1,start_neurons * 1, True)
     output_layer = conv2d(num_class_, (1,1), padding="same", activation=None)(uconv1)
 
     
     return output_layer
-  logits = model(tf_train_dataset,32,NUM_CLASS)
+  logits = model(tf_train_dataset,32,NB_CLASSES)
   loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf_train_labels, logits=logits))
   optimizer = tf.train.AdamOptimizer(BASE_LEARNING_RATE).minimize(loss)
   
   train_prediction =  tf.nn.softmax(logits)
   
-  val_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf_test_labels, logits=model(tf_test_dataset,32,NUM_CLASS)))
+  val_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf_test_labels, logits=model(tf_test_dataset,32,NB_CLASSES)))
   
 
 
-#trainGraph(graph)
+trainGraph(graph)
 testGraphOnTestSet(graph,SAVE_PATH,test_labels,test_dataset)
 

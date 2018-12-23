@@ -40,20 +40,19 @@ def plotImgvsTMaskVsPredMask(img,true_mask,check_train_mask):
     print("original image")
     plt.subplot(221)
     plt.title("original image")
-    imshow(img.astype(float)[:, :, 0])
+    imshow(img)
     plt.subplot(222)
     plt.title("true mask")
     imshow(true_mask)
     plt.subplot(223)
     plt.title("produced mask")
-
     imshow(check_train_mask)
     plt.show()
      
     return true_mask,check_train_mask
 
 def reformatForTest(t):
-    return t.squeeze().astype(np.uint8)
+    return np.argmax(t,axis=-1)
 
 def toLabels(pred,treshold):
     np.putmask(pred,pred<treshold,1)
@@ -64,20 +63,18 @@ def toLabels(pred,treshold):
 
 def testGraphOnTestSet(graph,path,test_labels,test_images,TEST_DATASET_SIZE):
     ix = random.randint(0, TEST_DATASET_SIZE-1)
-    check_data = np.expand_dims(np.array(test_images[ix]), axis=0)
-
+    img = test_images[ix];
+    check_data = np.expand_dims(np.array(img), axis=0)
+    print(test_labels.shape,test_labels.min(),test_labels.max())
     with tf.Session(graph=graph) as session:
 
         saver = tf.train.Saver()
         saver.restore(session, path)
         check_train = {tf_train_dataset:check_data}
         check_mask = session.run(logits,feed_dict=check_train)
-        true_mask = test_labels[ix].astype(float)[:, :, 0]
-        img = test_images[ix];
-
+        true_mask = test_labels[ix]
         true_mask = reformatForTest(true_mask)
-        check_mask = reformatForTest(check_mask)
-        check_mask = toLabels(check_mask,240)
+        check_mask = reformatForTest(check_mask[0])
         plotImgvsTMaskVsPredMask(img,true_mask,check_mask)
         fscore, acc, recall, pres, cmat = evaluate(true_mask.flatten(),check_mask.flatten() ,2)
         print('F-score: '+str(fscore)+'\tacc: '+str(acc),'\trecall: '+str(recall),'\tprecision: '+str(pres))
