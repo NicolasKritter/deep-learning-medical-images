@@ -154,7 +154,8 @@ with graph.as_default():
   tf_test_dataset = tf.constant(test_dataset)
   tf_test_labels = tf.constant(test_labels)
   class_weights = tf.constant([0.5,0.8,1])
-
+#TODO weihts
+  #tf.multiply(tf_train_labels, class_weights)
   global_step = tf.Variable(0)
   # Variables.
   #5x5 filter depth: 32 
@@ -212,9 +213,8 @@ with graph.as_default():
     
     output_layer = conv2d(num_class, kernel=(1,1), padding="same", activation=None)(c9)
     return output_layer
-#TODO class weights
   logits = model(tf_train_dataset,NB_CLASSES,True)
-  loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf_train_labels, logits=tf.multiply(logits, class_weights)))
+  loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf_train_labels, logits=logits))
   optimizer =  tf.train.AdamOptimizer(BASE_LEARNING_RATE).minimize(loss)
   val_loss =tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf_test_labels, logits=model(tf_test_dataset,NB_CLASSES,True)))
 
