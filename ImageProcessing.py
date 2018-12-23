@@ -62,8 +62,8 @@ def getFullMaskFromImg(img,toOne=True):
 
 def rotation(img,angle):
     rows,cols = img.shape
-    M = cv2.getRotationMatrix2D((cols/2,rows/2),angle,1)
-    return cv2.warpAffine(img,M,(cols,rows))
+    M = cv2.getRotationMatrix2D((cols/2,rows/2),angle,1,interpolation=cv2.INTER_NEAREST)
+    return cv2.warpAffine(img,M,(cols,rows),interpolation=cv2.INTER_NEAREST)
     
 def formatData(X,y,numclass):
      """format list data (X) and tag(y) for cnn"""
@@ -74,7 +74,6 @@ def formatData(X,y,numclass):
 
      for i in range (y_tab.shape[0]):
          for j in range (0,y_tab.shape[1]):
-#            print i,j,y_test[i][j]
              y_cat[i][j] = np_utils.to_categorical(y_tab[i][j], numclass)
      return  x_tab, y_cat
      

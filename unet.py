@@ -79,7 +79,7 @@ def shuffle():
    images = train_dataset[p]
    labels = train_labels[p]
 
-SAVE=True
+SAVE=False
 RETRAIN=False
 #réduire pour éviter de prendre toute la ram
 
@@ -118,7 +118,7 @@ def trainGraph(graph):
             saver.save(session,SAVE_PATH)#write_meta_graph=False
       if (SAVE and step % 10!=0) :
         saver.save(session,SAVE_PATH)
-    x = np.arange(len(v_loss))*2
+    x = np.arange(len(v_loss))*BATCH_SIZE
     plt.plot(x,t_loss)
     plt.plot(x,v_loss)
     plt.legend(['train_loss','val_loss'], loc='upper left')
@@ -153,10 +153,7 @@ with graph.as_default():
   tf_train_labels = tf.placeholder(tf.uint8, [None, IMG_WIDTH, IMG_HEIGHT, NB_CLASSES], name='labels')
   tf_test_dataset = tf.constant(test_dataset)
   tf_test_labels = tf.constant(test_labels)
-  
-  """tf_test_labels = tf.one_hot(tf_test_labels, NB_CLASSES)
-  tf_train_labels2 = tf.one_hot(tf_train_labels, NB_CLASSES)
-  print("size",tf_train_labels2.shape)"""
+
   global_step = tf.Variable(0)
   # Variables.
   #5x5 filter depth: 32 
@@ -215,7 +212,8 @@ with graph.as_default():
     output_layer = conv2d(num_class, kernel=(1,1), padding="same", activation=None)(c9)
     return output_layer
 #TODO class weights
-  #weighted = tf.multiply(tf_train_labels, class_weights)
+  class_weights =[1,10,100]
+  weighted = tf.multiply(tf_train_labels, class_weights)
   logits = model(tf_train_dataset,NB_CLASSES,True)
   loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf_train_labels, logits=logits))
   optimizer =  tf.train.AdamOptimizer(BASE_LEARNING_RATE).minimize(loss)

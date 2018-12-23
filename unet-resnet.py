@@ -108,7 +108,7 @@ def shuffle():
    images = train_dataset[p]
    labels = train_labels[p]
 
-SAVE=True
+SAVE=False
 RETRAIN=False
 #réduire pour éviter de prendre toute la ram
 
@@ -147,7 +147,7 @@ def trainGraph(graph):
             saver.save(session,SAVE_PATH)#write_meta_graph=False
       if (SAVE and step % 10!=0) :
         saver.save(session,SAVE_PATH)
-    x = np.arange(len(v_loss))*2
+    x = np.arange(len(v_loss))*BATCH_SIZE
     plt.plot(x,t_loss)
     plt.plot(x,v_loss)
     plt.legend(['train_loss','val_loss'], loc='upper left')
@@ -274,6 +274,6 @@ with graph.as_default():
   
 
 
-trainGraph(graph)
+#trainGraph(graph)
 testGraphOnTestSet(graph,SAVE_PATH,test_labels,test_dataset)
 
