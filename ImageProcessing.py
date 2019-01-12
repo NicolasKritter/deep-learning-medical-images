@@ -17,8 +17,8 @@ import cv2
 LOWER_RED = np.array([27,0,130])#136,0,27
 UPPER_RED = np.array([29,1,136])
 
-LOWER_YELLOW = np.array([0,254,254])
-UPPER_YELLOW = np.array([0,255,255])
+LOWER_YELLOW = np.array([0,150,150])
+UPPER_YELLOW = np.array([40,255,255])
 
 #PATH
 #TEST_PATH= 'test/1.tif'
@@ -53,7 +53,7 @@ def getYellowMask(img):
     np.putmask(yellow_mask,yellow_mask>0,2)
     return yellow_mask   
 
-def getFullMaskFromImg(img,toOne=True):
+def getFullMaskFromImg(img):
     m1 = getRedMask(img)
     m2 = getYellowMask(img)
     img = mergeMasks([m1,m2])
@@ -61,9 +61,9 @@ def getFullMaskFromImg(img,toOne=True):
 
 
 def rotation(img,angle):
-    rows,cols = img.shape
-    M = cv2.getRotationMatrix2D((cols/2,rows/2),angle,1,interpolation=cv2.INTER_NEAREST)
-    return cv2.warpAffine(img,M,(cols,rows),interpolation=cv2.INTER_NEAREST)
+    rows,cols,_ = img.shape
+    M = cv2.getRotationMatrix2D((cols/2,rows/2),angle,1)
+    return cv2.warpAffine(img,M,(cols,rows))
     
 def formatData(X,y,numclass):
      """format list data (X) and tag(y) for cnn"""

@@ -11,29 +11,24 @@ import numpy as np
 import random
 from six.moves import cPickle as pickle
 from tqdm import tqdm
-from skimage.transform import resize
 import matplotlib.pyplot as plt
 from skimage.io import  imshow
 import cv2
 import ImageProcessing
 
-SEED = 42
-random.seed = 42
-np.random.seed = 42
-
 
 IMG_WIDTH = 128 #256
 IMG_HEIGHT = 128 #256
 IMG_CHANNELS = 3 #3
-MASK_CHANNELS = 3#1
-NB_CLASSES = 3#3
+MASK_CHANNELS = 3
+NB_CLASSES = 3
 PICKLE_FILE = 'data.pickle'
 TRAIN_PATH='data/train/'
 TEST_PATH='data/test/'
 EXTENSION = '.tif'
 #TYPE = '_GT'
 TYPE='_segmented'
-PROC='_PROC'
+print(next(os.walk(TRAIN_PATH))[1])
 def normalize(image,minC,maxC):
     image= (image - minC) / (maxC - minC)
     return image
@@ -57,14 +52,15 @@ def randomizeAngle(image,mask):
     return image,mask
 def extractImageNMask(path,id_):
     img = cv2.imread(path + '/images/' + id_ + EXTENSION)[:,:,:IMG_CHANNELS]
+    mask = cv2.imread(path + '/masks/' + id_+TYPE+EXTENSION)[:,:,:MASK_CHANNELS]
+    #img,mask=randomizeAngle(img,mask)
     img = cv2.resize(img, (IMG_HEIGHT, IMG_WIDTH), interpolation=cv2.INTER_CUBIC)
     img = normalizeImage(img)
-    mask = cv2.imread(path + '/masks/' + id_+TYPE+EXTENSION)[:,:,:MASK_CHANNELS]
     mask = ImageProcessing.getFullMaskFromImg(mask)
     mask = cv2.resize(mask, (IMG_HEIGHT, IMG_WIDTH), interpolation=cv2.INTER_NEAREST)
     return img,mask
     
-WRITE=False
+
 def getImagesNMasks(le_path):
     print("Getting & Resizing train images and mask")
     id_list = next(os.walk(le_path))[1]
@@ -73,14 +69,11 @@ def getImagesNMasks(le_path):
     labels = np.zeros((size,IMG_HEIGHT,IMG_WIDTH),dtype="uint8")#uint8
     sys.stdout.flush()
     for n, id_ in tqdm(enumerate(id_list), total=len(id_list)):
+        print(id_)
         path = le_path + id_
         images[n],labels[n] = extractImageNMask(path,id_)
-        """
-        if WRITE:
-            cv2.imwrite(path + '/images/' + id_+PROC+EXTENSION,images[n])
-            cv2.imwrite(path + '/mask/' + id_+PROC+EXTENSION,labels[n])
-"""
-    return images,labels,size  #convert images to [0;1]
+
+    return images,labels,size
 
 
 
