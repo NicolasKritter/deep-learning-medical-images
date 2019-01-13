@@ -43,17 +43,27 @@ def normalizeImage(image):
     image=normalize(image,minC,maxC)
     image=zero_center(image)
     return image 
-    
+
+#Rotate the mask & image randomly 
 def randomizeAngle(image,mask):
     r = [0,90,180,270]
     rot = np.random.choice(r)
     image = ImageProcessing.rotation(image,rot)
     mask = ImageProcessing.rotation(mask,rot)
     return image,mask
+    
+#TODO ajouter flip
+def generateTransfo(image,mask):
+    if random.randint(0, 5)>=1:
+        image,mask = randomizeAngle(image,mask)
+    
+    return image,mask
+    
+    
 def extractImageNMask(path,id_):
     img = cv2.imread(path + '/images/' + id_ + EXTENSION)[:,:,:IMG_CHANNELS]
     mask = cv2.imread(path + '/masks/' + id_+TYPE+EXTENSION)[:,:,:MASK_CHANNELS]
-    #img,mask=randomizeAngle(img,mask)
+    img,mask=generateTransfo(img,mask)
     img = cv2.resize(img, (IMG_HEIGHT, IMG_WIDTH), interpolation=cv2.INTER_CUBIC)
     img = normalizeImage(img)
     mask = ImageProcessing.getFullMaskFromImg(mask)
@@ -89,6 +99,9 @@ def savePickleData(pickle_file,save,force:False):
             print('Unable to save data to',pickle_file,':',e)
             raise
     return os.stat(pickle_file)
+
+def getTrainBatch():
+    return getImagesNMasks(TRAIN_PATH)
  
 train_images,train_mask,train_size = getImagesNMasks(TRAIN_PATH)
 train_images,train_mask = ImageProcessing.formatData(train_images,train_mask,3)

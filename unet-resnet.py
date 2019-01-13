@@ -15,6 +15,7 @@ from six.moves import range
 from tensorflow.python.ops import array_ops
 import random
 import matplotlib.pyplot as plt
+from prepare_data import getTrainBatch
 
 import TestPrediction
 
@@ -104,7 +105,8 @@ labels = train_labels
 
 def shuffle():
    global images,labels
-   p = np.random.permutation(len(train_dataset))
+   train_dataset,train_labels=getTrainBatch()
+   p = np.random.permutation(TRAIN_DATASET_SIZE)
    images = train_dataset[p]
    labels = train_labels[p]
 
