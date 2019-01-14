@@ -44,10 +44,6 @@ with open (PICKLE_FILE,'rb') as f:
     del PICKLE_FILE
     print('Training set (images masks)',train_dataset.shape,train_labels.shape)
     print('Test set',test_dataset.shape)
-    
-SEED = 42
-
-tf.set_random_seed(SEED)
 
 def deconv2d(input_tensor, filter_size, output_size, out_channels, in_channels, name, strides = [1, 1, 1, 1]):
     dyn_input_shape = tf.shape(input_tensor)
@@ -98,20 +94,20 @@ def residual_block(blockInput, num_filters=16, batch_activate = False):
     return x
 
 
-NUM_STEPS = 100#00
-
+NUM_STEPS =1005#00
+#NUM_STEP max (32 et 128*128): 275
 images = train_dataset
 labels = train_labels
 
 def shuffle():
    global images,labels
-   train_dataset,train_labels=getTrainBatch()
+   #train_dataset,train_labels=getTrainBatch()
    p = np.random.permutation(TRAIN_DATASET_SIZE)
    images = train_dataset[p]
    labels = train_labels[p]
 
-SAVE=False
-RETRAIN=False
+SAVE=True
+RETRAIN=True
 #réduire pour éviter de prendre toute la ram
 
 BATCH_SIZE = 2
@@ -178,18 +174,21 @@ graph = tf.Graph()
 BASE_LEARNING_RATE = 1e-4
 NB_CLASSES = 3
 with graph.as_default():
-
+  k = random.randint(0, 3)
   # Input data.
   tf_train_dataset =tf.placeholder(tf.float32, [None, IMG_WIDTH, IMG_HEIGHT, IMG_CHANNELS], name='data')
   tf_train_labels = tf.placeholder(tf.float32, [None, IMG_WIDTH, IMG_HEIGHT, NB_CLASSES], name='labels')
-  
+  #TODO rotate test_dataset & labels ?
+  tf_train_dataset = tf.image.rot90(tf_train_dataset,k=k,name=None)
+  tf_train_labels = tf.image.rot90(tf_train_labels,k=k,name=None)
+  #validation
   tf_test_dataset = tf.constant(test_dataset)
   tf_test_labels = tf.constant(test_labels)
 
   global_step = tf.Variable(0)
   # Variables.
   #5x5 filter depth: 32 
-  
+  START_NEURON = 32 # *4 ?
 # Build model
   def model(input_layer, start_neurons, num_class_, DropoutRatio = 0.5,):
     # 101 -> 50
@@ -266,7 +265,7 @@ with graph.as_default():
 
     
     return output_layer
-  logits = model(tf_train_dataset,32,NB_CLASSES)
+  logits = model(tf_train_dataset,START_NEURON,NB_CLASSES)
   loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf_train_labels, logits=logits))
   optimizer = tf.train.AdamOptimizer(BASE_LEARNING_RATE).minimize(loss)
   
@@ -276,6 +275,6 @@ with graph.as_default():
   
 
 
-#trainGraph(graph)
+trainGraph(graph)
 testGraphOnTestSet(graph,SAVE_PATH,test_labels,test_dataset)
 

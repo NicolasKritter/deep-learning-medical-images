@@ -17,8 +17,8 @@ import cv2
 import ImageProcessing
 
 
-IMG_WIDTH = 128 #256
-IMG_HEIGHT = 128 #256
+IMG_WIDTH = 128 #512
+IMG_HEIGHT = 128 #512
 IMG_CHANNELS = 3 #3
 MASK_CHANNELS = 3
 NB_CLASSES = 3
@@ -63,7 +63,7 @@ def generateTransfo(image,mask):
 def extractImageNMask(path,id_):
     img = cv2.imread(path + '/images/' + id_ + EXTENSION)[:,:,:IMG_CHANNELS]
     mask = cv2.imread(path + '/masks/' + id_+TYPE+EXTENSION)[:,:,:MASK_CHANNELS]
-    img,mask=generateTransfo(img,mask)
+    #img,mask=generateTransfo(img,mask)
     img = cv2.resize(img, (IMG_HEIGHT, IMG_WIDTH), interpolation=cv2.INTER_CUBIC)
     img = normalizeImage(img)
     mask = ImageProcessing.getFullMaskFromImg(mask)
@@ -103,11 +103,12 @@ def savePickleData(pickle_file,save,force:False):
 def getTrainBatch():
     return getImagesNMasks(TRAIN_PATH)
  
-train_images,train_mask,train_size = getImagesNMasks(TRAIN_PATH)
-train_images,train_mask = ImageProcessing.formatData(train_images,train_mask,3)
+if __name__ == '__main__':
+    train_images,train_mask,train_size = getImagesNMasks(TRAIN_PATH)
+    train_images,train_mask = ImageProcessing.formatData(train_images,train_mask,3)
 
-test_images,test_labels,test_size = getImagesNMasks(TEST_PATH)
-test_images,test_labels = ImageProcessing.formatData(test_images,test_labels,3)
+    test_images,test_labels,test_size = getImagesNMasks(TEST_PATH)
+    test_images,test_labels = ImageProcessing.formatData(test_images,test_labels,3)
 
 def saveData():
     

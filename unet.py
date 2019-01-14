@@ -147,7 +147,6 @@ graph = tf.Graph()
 BASE_LEARNING_RATE = 1e-4
 NB_CLASSES = 3
 with graph.as_default():
-
   # Input data.
   tf_train_dataset =tf.placeholder(tf.float32, [None, IMG_WIDTH, IMG_HEIGHT, IMG_CHANNELS], name='data')
   tf_train_labels = tf.placeholder(tf.uint8, [None, IMG_WIDTH, IMG_HEIGHT, NB_CLASSES], name='labels')
