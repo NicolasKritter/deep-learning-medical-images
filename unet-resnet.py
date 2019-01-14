@@ -94,7 +94,7 @@ def residual_block(blockInput, num_filters=16, batch_activate = False):
     return x
 
 
-NUM_STEPS =1005#00
+NUM_STEPS =100#00
 #NUM_STEP max (32 et 128*128): 275
 images = train_dataset
 labels = train_labels
