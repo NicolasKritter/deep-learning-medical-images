@@ -106,7 +106,7 @@ def shuffle():
    images = train_dataset[p]
    labels = train_labels[p]
 
-SAVE=False
+SAVE=True
 RETRAIN=False
 #réduire pour éviter de prendre toute la ram
 
@@ -292,6 +292,6 @@ with graph.as_default():
   
 
 
-#trainGraph(graph)
+trainGraph(graph)
 testGraphOnTestSet(graph,SAVE_PATH,test_labels,test_dataset)
 
