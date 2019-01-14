@@ -94,7 +94,7 @@ def residual_block(blockInput, num_filters=16, batch_activate = False):
     return x
 
 
-NUM_STEPS =100#00
+NUM_STEPS =300#00
 #NUM_STEP max (32 et 128*128): 275
 images = train_dataset
 labels = train_labels
@@ -107,7 +107,7 @@ def shuffle():
    labels = train_labels[p]
 
 SAVE=True
-RETRAIN=True
+RETRAIN=False
 #réduire pour éviter de prendre toute la ram
 
 BATCH_SIZE = 2
@@ -154,6 +154,7 @@ def trainGraph(graph):
 
 def testGraphOnTestSet(graph,path,test_labels,test_images):
     ix = random.randint(0, TEST_DATASET_SIZE-1)
+    print(ix)
     img = test_images[ix];
     check_data = np.expand_dims(np.array(img), axis=0)
     with tf.Session(graph=graph) as session:
@@ -170,17 +171,33 @@ def testGraphOnTestSet(graph,path,test_labels,test_images):
         print('F-score: '+str(fscore)+'\tacc: '+str(acc),'\trecall: '+str(recall),'\tprecision: '+str(pres))
         print(cmat)
 
+
+def turn_image_vertically(image, mask):
+    uniform_random = tf.random_uniform([], 0, 1.0,seed=None)
+    flip_cond = tf.less(uniform_random, .5)
+    image = tf.cond(flip_cond, lambda: tf.image.flip_up_down(image), lambda: image)
+    mask = tf.cond(flip_cond, lambda: tf.image.flip_up_down(mask), lambda: mask)
+    uniform_random = tf.random_uniform([], 0, 1.0,seed=None)
+    flip_cond = tf.less(uniform_random, .5)
+    image = tf.cond(flip_cond, lambda: tf.image.flip_left_right(image), lambda: image)
+    mask = tf.cond(flip_cond, lambda: tf.image.flip_left_right(mask), lambda: mask)
+    k = random.randint(0, 3)
+    image = tf.image.rot90(image,k=k,name=None)
+    mask = tf.image.rot90(mask,k=k,name=None)
+    
+    return image, mask
+    
+    
 graph = tf.Graph()
 BASE_LEARNING_RATE = 1e-4
 NB_CLASSES = 3
 with graph.as_default():
-  k = random.randint(0, 3)
+  
   # Input data.
   tf_train_dataset =tf.placeholder(tf.float32, [None, IMG_WIDTH, IMG_HEIGHT, IMG_CHANNELS], name='data')
   tf_train_labels = tf.placeholder(tf.float32, [None, IMG_WIDTH, IMG_HEIGHT, NB_CLASSES], name='labels')
   #TODO rotate test_dataset & labels ?
-  tf_train_dataset = tf.image.rot90(tf_train_dataset,k=k,name=None)
-  tf_train_labels = tf.image.rot90(tf_train_labels,k=k,name=None)
+  tf_train_dataset,tf_train_labels = turn_image_vertically(tf_train_dataset,tf_train_labels)
   #validation
   tf_test_dataset = tf.constant(test_dataset)
   tf_test_labels = tf.constant(test_labels)
