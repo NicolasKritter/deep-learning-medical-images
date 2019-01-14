@@ -94,7 +94,7 @@ def residual_block(blockInput, num_filters=16, batch_activate = False):
     return x
 
 
-NUM_STEPS =300#00
+NUM_STEPS =270#00
 #NUM_STEP max (32 et 128*128): 275
 images = train_dataset
 labels = train_labels
@@ -106,7 +106,7 @@ def shuffle():
    images = train_dataset[p]
    labels = train_labels[p]
 
-SAVE=True
+SAVE=False
 RETRAIN=False
 #réduire pour éviter de prendre toute la ram
 
@@ -288,10 +288,10 @@ with graph.as_default():
   
   train_prediction =  tf.nn.softmax(logits)
   
-  val_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf_test_labels, logits=model(tf_test_dataset,32,NB_CLASSES)))
+  val_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf_test_labels, logits=model(tf_test_dataset,START_NEURON,NB_CLASSES)))
   
 
 
-trainGraph(graph)
+#trainGraph(graph)
 testGraphOnTestSet(graph,SAVE_PATH,test_labels,test_dataset)
 
