@@ -25,8 +25,6 @@ SEED = 42
 
 tf.set_random_seed(SEED)
 
-NUM_LABELS =2 #md vs not md
-
 with open (PICKLE_FILE,'rb') as f:
     save = pickle.load(f)
     train_dataset = save['train_images']
@@ -45,10 +43,6 @@ with open (PICKLE_FILE,'rb') as f:
     print('Test set',test_dataset.shape)
 
 
-
-
-
-#NUM_STEP max (32 et 128*128): 275
 images = train_dataset
 labels = train_labels
 
@@ -61,11 +55,13 @@ def shuffle():
    
 
 
-def data_augment(images,masks):
-    return images,masks
+"""def data_augment(images,masks):
+    return images,masks"""
+
 graph = tf.Graph()
 BASE_LEARNING_RATE = 1e-4
 NB_CLASSES = 3
+START_NEURON = 32
 with graph.as_default():
   
   # Input data.
@@ -80,7 +76,6 @@ with graph.as_default():
   global_step = tf.Variable(0)
   # Variables.
   #5x5 filter depth: 32 
-  START_NEURON = 32 # *4 ?
 # Build model
   def model(input_layer, start_neurons, num_class_, DropoutRatio = 0.5,):
     # 101 -> 50
@@ -164,11 +159,11 @@ with graph.as_default():
   #val_model = model(tf_test_dataset,START_NEURON,NB_CLASSES)
   #val_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf_test_labels, logits=val_model))
 
-SAVE=True
+SAVE=False
 RETRAIN=False
 #réduire pour éviter de prendre toute la ram
 
-NUM_STEPS =270#00
+NUM_STEPS =270#270
 BATCH_SIZE = 2
 
 def trainGraph(graph):

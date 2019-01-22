@@ -60,7 +60,7 @@ def toLabels(pred,treshold):
     return pred
     
 
-
+"""
 def testGraphOnTestSet(graph,path,test_labels,test_images,TEST_DATASET_SIZE):
     ix = random.randint(0, TEST_DATASET_SIZE-1)
     img = test_images[ix];
@@ -79,3 +79,4 @@ def testGraphOnTestSet(graph,path,test_labels,test_images,TEST_DATASET_SIZE):
         fscore, acc, recall, pres, cmat = evaluate(true_mask.flatten(),check_mask.flatten() ,2)
         print('F-score: '+str(fscore)+'\tacc: '+str(acc),'\trecall: '+str(recall),'\tprecision: '+str(pres))
         print(cmat)
+    """
