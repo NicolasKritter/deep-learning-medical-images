@@ -64,7 +64,9 @@ def rotation(img,angle):
     rows,cols,_ = img.shape
     M = cv2.getRotationMatrix2D((cols/2,rows/2),angle,1)
     return cv2.warpAffine(img,M,(cols,rows))
-    
+
+def crop(img,amount):
+    return img[amount:-amount,amount:-amount,:]
     #One hot encoding
 def formatData(X,y,numclass):
      """format list data (X) and tag(y) for cnn"""

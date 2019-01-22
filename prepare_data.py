@@ -59,11 +59,13 @@ def generateTransfo(image,mask):
         image,mask = randomizeAngle(image,mask)
     
     return image,mask
-    
+
     
 def extractImageNMask(path,id_):
     img = cv2.imread(path + '/images/' + id_ + EXTENSION)[:,:,:IMG_CHANNELS]
     mask = cv2.imread(path + '/masks/' + id_+TYPE+EXTENSION)[:,:,:MASK_CHANNELS]
+    img = ImageProcessing.crop(img,20)
+    mask = ImageProcessing.crop(mask,20)
     #img,mask=generateTransfo(img,mask)
     img = cv2.resize(img, (IMG_HEIGHT, IMG_WIDTH), interpolation=cv2.INTER_CUBIC)
     img = normalizeImage(img)
