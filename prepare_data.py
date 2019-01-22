@@ -16,9 +16,10 @@ from skimage.io import  imshow
 import cv2
 import ImageProcessing
 
-
-IMG_WIDTH = 512 #512
-IMG_HEIGHT = 512 #512
+#1336*888
+#FACTOR = 2.6
+IMG_WIDTH = 512 #512 512
+IMG_HEIGHT = 400 #512 340
 IMG_CHANNELS = 3 #3
 MASK_CHANNELS = 3
 NB_CLASSES = 3
@@ -28,7 +29,7 @@ TEST_PATH='data/test/'
 EXTENSION = '.tif'
 #TYPE = '_GT'
 TYPE='_segmented'
-print(next(os.walk(TRAIN_PATH))[1])
+#print(next(os.walk(TRAIN_PATH))[1])
 def normalize(image,minC,maxC):
     image= (image - minC) / (maxC - minC)
     return image
@@ -75,11 +76,11 @@ def getImagesNMasks(le_path):
     print("Getting & Resizing train images and mask")
     id_list = next(os.walk(le_path))[1]
     size  = len(id_list)
-    images = np.zeros((size,IMG_HEIGHT,IMG_WIDTH,IMG_CHANNELS),dtype="float32")
-    labels = np.zeros((size,IMG_HEIGHT,IMG_WIDTH),dtype="uint8")#uint8
+    images = np.zeros((size,IMG_WIDTH,IMG_HEIGHT,IMG_CHANNELS),dtype="float32")
+    labels = np.zeros((size,IMG_WIDTH,IMG_HEIGHT),dtype="uint8")#uint8
     sys.stdout.flush()
     for n, id_ in tqdm(enumerate(id_list), total=len(id_list)):
-        print(id_)
+        #print(id_)
         path = le_path + id_
         images[n],labels[n] = extractImageNMask(path,id_)
 
@@ -134,7 +135,7 @@ def getTrainImagesNMasksBatch(num_batch):
     sys.stdout.flush()
     for n, id_ in tqdm(enumerate(id_list), total=len(id_list)):
         path = TRAIN_PATH + id_
-        print(id_)
+        #print(id_)
         images[n],labels[n] = extractImageNMask(path,id_)
     return images,labels
     

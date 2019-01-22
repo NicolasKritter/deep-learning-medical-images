@@ -6,15 +6,15 @@ Created on Mon Dec 17 17:37:17 2018
 """
 import numpy as np
 
-from skimage.transform import resize
+"""from skimage.transform import resize
 import matplotlib.pyplot as plt
 from skimage.io import  imshow
-import tensorflow as tf
+import tensorflow as tf"""
 from keras.utils import np_utils
 import cv2
 
 #OpenCV: BGR
-LOWER_RED = np.array([27,0,130])#136,0,27
+LOWER_RED = np.array([27,0,130])
 UPPER_RED = np.array([29,1,136])
 
 LOWER_YELLOW = np.array([0,150,150])
@@ -65,11 +65,12 @@ def rotation(img,angle):
     M = cv2.getRotationMatrix2D((cols/2,rows/2),angle,1)
     return cv2.warpAffine(img,M,(cols,rows))
     
+    #One hot encoding
 def formatData(X,y,numclass):
      """format list data (X) and tag(y) for cnn"""
      y_tab= np.asarray(y)
      y_cat=np.zeros((y_tab.shape[0],y_tab.shape[1],y_tab.shape[2],numclass),np.uint8)
-     print(y_tab.max())
+     #print(y_tab.max())
      x_tab= np.asarray(X)
 
      for i in range (y_tab.shape[0]):

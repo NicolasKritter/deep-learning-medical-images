@@ -27,7 +27,7 @@ with open (PICKLE_FILE,'rb') as f:
     test_dataset = save['test_image']
     test_labels = save['test_labels']
     IMG_WIDTH = save['IMG_WIDTH']
-    IMG_HEIGHT = save['IMG_WIDTH']
+    IMG_HEIGHT = save['IMG_HEIGHT']
     IMG_CHANNELS = save['IMG_CHANNELS']
     
     TRAIN_DATASET_SIZE = save['TRAIN_DATASET_SIZE']
