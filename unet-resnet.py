@@ -177,8 +177,8 @@ def trainGraph(graph):
       tf.local_variables_initializer().run()
 
       print('Initialized')
-      saver = tf.train.Saver()
-      #saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=1)
+      #saver = tf.train.Saver()
+      saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=1)
 
       if RETRAIN:
          saver.restore(session, SAVE_PATH)
