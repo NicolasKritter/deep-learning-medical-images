@@ -164,7 +164,7 @@ with graph.as_default():
   #val_model = model(tf_test_dataset,START_NEURON,NB_CLASSES)
   #val_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf_test_labels, logits=val_model))
 
-SAVE=False
+SAVE=True
 RETRAIN=False
 #réduire pour éviter de prendre toute la ram
 
