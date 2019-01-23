@@ -18,8 +18,8 @@ import ImageProcessing
 
 #1336*888
 #FACTOR = 2.6
-IMG_WIDTH = 512 #512 512
-IMG_HEIGHT = 512 #512 340
+IMG_WIDTH = 512 #512 
+IMG_HEIGHT = 512 #512 
 IMG_CHANNELS = 3 #3
 MASK_CHANNELS = 3
 NB_CLASSES = 3
@@ -161,5 +161,7 @@ def test_data():
     plt.show()
 
 if __name__ == '__main__':
+    if not os.path.exists('Test'):
+        os.makedirs('Test')
     #test_data()
     saveData()

@@ -4,8 +4,6 @@ Created on Mon Nov 12 18:06:28 2018
 
 @author: nicolas
 """
-#https://towardsdatascience.com/google-deepmind-deep-learning-for-medical-image-segmentation-with-interactive-code-4634b6fd6a3a
-
 
 from __future__ import print_function
 import numpy as np
@@ -14,11 +12,17 @@ from six.moves import cPickle as pickle
 from six.moves import range
 import random
 import matplotlib.pyplot as plt
-#from prepare_data import getTrainBatch
+
 import deep_utils as utils
 import TestPrediction
+import os
 from data_augmentation import augment_imagesNMasks
 PICKLE_FILE = 'data.pickle'
+
+directory = 'Model/unet-resnet/'
+if not os.path.exists(directory):
+    os.makedirs(directory)
+    
 SAVE_PATH = 'Model/unet-resnet/model.ckpt'
 
 SEED = 42
@@ -55,8 +59,6 @@ def shuffle():
    
 
 
-"""def data_augment(images,masks):
-    return images,masks"""
 
 graph = tf.Graph()
 BASE_LEARNING_RATE = 1e-4
@@ -67,14 +69,13 @@ with graph.as_default():
   # Input data.
   tf_train_dataset =tf.placeholder(tf.float32, [None, IMG_WIDTH, IMG_HEIGHT, IMG_CHANNELS], name='data')
   tf_train_labels = tf.placeholder(tf.float32, [None, IMG_WIDTH, IMG_HEIGHT, NB_CLASSES], name='labels')
+  
+  #Desactivate data augmentation by default (for validation & production)
   tf_is_augment = tf.placeholder_with_default(0, [])
   tf_train_dataset,tf_train_labels = tf.cond(tf.math.greater(tf_is_augment,0),lambda:augment_imagesNMasks(tf_train_dataset,tf_train_labels),lambda:(tf_train_dataset,tf_train_labels))
-  #validation
-  #tf_test_dataset = tf.constant(test_dataset)
-  #tf_test_labels = tf.constant(test_labels)
-  
+
   global_step = tf.Variable(0)
-  # Variables.
+
   #5x5 filter depth: 32 
 # Build model
   def model(input_layer, start_neurons, num_class_, DropoutRatio = 0.5,):
@@ -152,18 +153,25 @@ with graph.as_default():
 
     
     return output_layer
+  
+  #Output prediction
   logits = model(tf_train_dataset,START_NEURON,NB_CLASSES)
   loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf_train_labels, logits=logits))
+  
+  #Learning
   optimizer = tf.train.AdamOptimizer(BASE_LEARNING_RATE).minimize(loss)
   
-  #val_model = model(tf_test_dataset,START_NEURON,NB_CLASSES)
-  #val_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=tf_test_labels, logits=val_model))
 
+#True: save the model on the path
 SAVE=False
-RETRAIN=False
-#réduire pour éviter de prendre toute la ram
 
-NUM_STEPS =270#270
+#True: load the model from path and train over it
+RETRAIN=False
+
+#Number of iterations
+NUM_STEPS =0#255
+
+#Images per train batch
 BATCH_SIZE = 2
 
 def trainGraph(graph):
@@ -177,12 +185,12 @@ def trainGraph(graph):
       tf.local_variables_initializer().run()
 
       print('Initialized')
-      #saver = tf.train.Saver()
       saver = tf.train.Saver(max_to_keep=4, keep_checkpoint_every_n_hours=1)
 
       if RETRAIN:
          saver.restore(session, SAVE_PATH)
-      #Epoch
+      
+      #Train the model
       for step in range(NUM_STEPS):
         if iteration>TRAIN_DATASET_SIZE:
             shuffle()
@@ -190,10 +198,13 @@ def trainGraph(graph):
         offset = (step * BATCH_SIZE) % (train_labels.shape[0] - BATCH_SIZE)
         batch_data = train_dataset[offset:(offset + BATCH_SIZE), :]
         batch_labels = train_labels[offset:(offset + BATCH_SIZE), :]
-        #batch_data, batch_labels = data_augment(batch_data,batch_labels)
+        
+        #Load train batch & labels, perform data augmentation
         feed_dict = {tf_train_dataset : batch_data, tf_train_labels : batch_labels,tf_is_augment:1}
         loss_value, _ = session.run([loss, optimizer], feed_dict=feed_dict)
         iteration+=1
+        
+        #Validation each 10 steps to check overfitting & performance on the test set
         if (step % 10 == 0):
             t_loss.append(loss_value)
             #vl = val_loss.eval()
@@ -207,11 +218,12 @@ def trainGraph(graph):
             saver.save(session,SAVE_PATH)#write_meta_graph=False
       if (SAVE and step % 10!=0) :
         saver.save(session,SAVE_PATH)
-    x = np.arange(len(t_loss))*BATCH_SIZE
+    #Plot trian vs val loss
+    x = np.arange(len(t_loss))
     plt.plot(x,t_loss)
     plt.plot(x,v_loss)
     #plt.plot(x,v_acc)
-    plt.legend(['train_loss','acc'], loc='upper left')
+    plt.legend(['train_loss','val_loss'], loc='upper left')
     #plt.show()
     plt.savefig("fig.png")
     print('Done')
@@ -235,6 +247,17 @@ def testGraphOnTestSet(graph,path,test_labels,test_images):
         print('F-score: '+str(fscore)+'\tacc: '+str(acc),'\trecall: '+str(recall),'\tprecision: '+str(pres))
         print(cmat)
         
-trainGraph(graph)
-testGraphOnTestSet(graph,SAVE_PATH,test_labels,test_dataset)
+def getAverageAccuracyOnTestSet(graph,path,test_labels,test_images):
+    with tf.Session(graph=graph) as session:
 
+        saver = tf.train.Saver()
+        saver.restore(session, path)
+        check_train = {tf_train_dataset:test_images}
+        predictions = session.run(logits,feed_dict=check_train)
+        return TestPrediction.getAverageAccuracy(test_labels,predictions)
+
+
+    
+#trainGraph(graph)
+testGraphOnTestSet(graph,SAVE_PATH,test_labels,test_dataset)
+#print(getAverageAccuracyOnTestSet(graph,SAVE_PATH,test_labels,test_dataset))
